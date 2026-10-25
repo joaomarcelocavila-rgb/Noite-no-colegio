@@ -2116,6 +2116,8 @@ function renderInv(){const bar=$$('invbar');let h='';const cur=MX.inv[MX.sel];
       if(it.id==='lanterna'){if(hasItem('pilha'))b.push(['bat','Trocar pilha']);}
       else if(it.id==='pilha'){if(MX.hasLight)b.push(['bat','Pôr na lanterna']);b.push(['thr','Jogar']);}
       else if(it.id==='pistola'){}
+      else if(it.id==='fita'){b.push(['use','Ouvir'])}
+      else if(it.id==='apito'){b.push(['use','Quebrar'])}
       else if(d.key){b.push(['thr','Largar'])}
       else{if(d.fome||d.vida)b.push(['use','Usar']);b.push(['thr','Jogar']);}
       if(b.length)extra='<div class="mbs">'+b.map(([k,t])=>'<button class="mb mb-'+k+'" data-a="'+k+'" type="button" aria-label="'+t+'">'+MB[k]+'</button>').join('')+'</div>';}
@@ -2138,6 +2140,8 @@ function takeOne(i){const it=MX.inv[i];if(!it)return;it.n--;if(it.n<=0){MX.inv[i
 function useSel(){const i=MX.sel,it=MX.inv[i];if(!it||HANIM)return;const d=ITEMS[it.id];
   if(it.id==='lanterna'){if(MX.bat<=0&&!MX.torchOn){hint(hasItem('pilha')?'Sem bateria. Troque a pilha.':'Sem bateria. Ache uma pilha.',2);return;}MX.torchOn=!MX.torchOn;clickSound();renderInv();return;}
   if(it.id==='pilha'){startReload();return;}
+  if(it.id==='fita'){openTapes();return;}
+  if(it.id==='apito'){trueEnding();return;}
   if(d.fome||d.vida){startEat(i);return;}
   if(it.id==='trevo'){hint('O trevo te dá sorte: mais chance de achar armas.',3);return;}
   if(d.gun)return;
@@ -2357,17 +2361,21 @@ const PROF={ready:false,active:false,state:'off',hp:300,pos:new THREE.Vector3(25
 (function(){const img=new Image();img.onload=()=>{try{VIL.loadVillain(VIL.faceCanvas(img),v=>{PROF.v=v;PROF.root=v.root;v.root.visible=false;scene.add(v.root);v.acts.walk&&v.acts.walk.play();PROF.cur=v.acts.walk;PROF.ready=true;
   v.root.traverse(o=>{if(o.isMesh)o.frustumCulled=false;});});}catch(e){console.warn('professor',e);}};img.src=VIL.FACE;})();
 function pPlay(n,fade=.3){const a=PROF.v.acts[n];if(!a||PROF.cur===a)return;a.reset().play();if(PROF.cur)a.crossFadeFrom(PROF.cur,fade,true);PROF.cur=a;}
+document.body.insertAdjacentHTML('beforeend','<div id="boss" hidden><span>PROFESSOR</span><div><i></i></div></div>');
+document.head.insertAdjacentHTML('beforeend','<style>#boss{position:fixed;left:50%;top:calc(46px + env(safe-area-inset-top,0px));transform:translateX(-50%);width:min(320px,60vw);z-index:6;pointer-events:none;text-align:center}#boss span{font:700 10px var(--f-body);letter-spacing:.3em;color:#ff6a5a;text-shadow:0 1px 3px #000}#boss div{height:7px;margin-top:3px;background:rgba(0,0,0,.6);border:1px solid rgba(255,90,70,.5);border-radius:4px;overflow:hidden}#boss i{display:block;height:100%;background:linear-gradient(90deg,#7a0a0a,#ff3a2a);transition:width .25s}body.mxcut #boss{display:none}</style>');
+function bossBar(){const max=DF().hp;$$('boss').hidden=PROF.dead;$$('boss').querySelector('i').style.width=Math.max(0,PROF.hp/max*100)+'%';}
 function releaseProf(){PROF.hp=DF().hp;if(!PROF.ready){setTimeout(releaseProf,500);return;}const far=randomNode(p=>p.distanceTo(P.pos)>30)||new THREE.Vector3(25,0,-25);PROF.pos.copy(far);PROF.active=true;PROF.state='roam';PROF.root.visible=true;
   setTimeout(()=>{window.__apito(.35,.08);setTimeout(()=>window.__apito(.35,.08),450);setTimeout(()=>window.__apito(1.1,.1),900);},1200);}
 function profSees(){if(P.hidden)return false;const eye=PROF.pos.clone();eye.y+=2.1;const me=new THREE.Vector3(P.pos.x,P.y+1.4,P.pos.z);const d=eye.distanceTo(me);if(d>DF().vis)return false;
   const dir=new THREE.Vector3(Math.sin(PROF.yaw),0,Math.cos(PROF.yaw));const to=me.clone().sub(eye);to.y=0;to.normalize();
   const lit=P.light&&MX.hasLight;if(dir.dot(to)<Math.cos(lit?1.1:.95)&&d>3)return false;if(!lit&&d>DF().vis*.45)return false;return lineOfSight(eye,me);}
-PROF.hit=function(dmg){if(PROF.dead)return;PROF.hp-=dmg;PROF.stun=Math.max(PROF.stun,.45);scream(.35,.5,.7);if(PROF.state!=='chase'){PROF.state='chase';}
-  if(PROF.hp<=0){PROF.dead=true;PROF.state='dead';PROF.fall=0;MX.won=true;MX.lock=true;scream(1,2.2,.6);setTimeout(()=>{const f=$$('fade');f.style.transition='opacity 1.2s';f.style.opacity=.85;setTimeout(()=>endScreen(true,'O professor caiu. Você sobreviveu à noite no colégio.'),1300);},2200);}};
-function updateProf(dt){if(!PROF.ready||!PROF.active)return;const v=PROF.v;
+PROF.hit=function(dmg){if(PROF.dead)return;PROF.hp-=dmg;bossBar();PROF.stun=Math.max(PROF.stun,.45);scream(.35,.5,.7);if(PROF.state!=='chase'){PROF.state='chase';}
+  if(PROF.hp<=0){PROF.dead=true;PROF.state='dead';PROF.fall=0;MX.won=true;MX.lock=true;scream(1,2.2,.6);setTimeout(()=>{const f=$$('fade');f.style.transition='opacity 1.2s';f.style.opacity=.85;setTimeout(()=>endScreen(true,'O professor caiu e não levantou mais. Mas, no escuro do corredor, o apito continua tocando sozinho…'),1300);},2200);}};
+function updateProf(dt){if(!PROF.ready||!PROF.active)return;const v=PROF.v;if(PROF.state==='ending')return;
   if(PROF.state==='dead'){PROF.fall=Math.min(1,PROF.fall+dt*.9);v.mixer.update(dt*.3);PROF.root.rotation.x=-PROF.fall*Math.PI/2;PROF.root.position.y=PROF.pos.y+.15*PROF.fall;v.follow();return;}
   if(PROF.state==='kill'){v.mixer.update(dt);v.follow();return;}
   const me=new THREE.Vector3(P.pos.x,P.y,P.pos.z),dist=Math.hypot(me.x-PROF.pos.x,me.z-PROF.pos.z);
+  if(PROF.sawLocker&&lockerHunt(dt,me,dist))return;
   if(PROF.stun>0){PROF.stun-=dt;pPlay('idle',.15);v.mixer.update(dt);v.follow();PROF.root.position.copy(PROF.pos);PROF.root.rotation.y=PROF.yaw;return;}
   const sees=(!MX.lock||CAMV.on)&&profSees();
   // barulho atrai
@@ -2385,13 +2393,30 @@ function updateProf(dt){if(!PROF.ready||!PROF.active)return;const v=PROF.v;
   if(PROF.cur===v.acts.walk)v.acts.walk.timeScale=1.15;
   v.mixer.update(dt);PROF.root.position.copy(PROF.pos);PROF.root.rotation.y=PROF.yaw;v.follow();
   // te pegou
-  const caughtInLocker=P.locker&&PROF.state==='chase'&&(PROF.lastSeenT||9)<1.6&&dist<1.6;
+  const caughtInLocker=false;
   if((!MX.lock||CAMV.on)&&!MX.dead&&dist<1.15&&Math.abs(me.y-PROF.pos.y)<1.2&&(!P.hidden||caughtInLocker))jumpscare();
   musicUpdate(dt,PROF.state==='chase',dist);}
 let JS=null;
 function jumpscare(){killScene('prof');}
 function updateJumpscare(dt){updateKill(dt);}
 /* ---------------- morte: jumpscare + ele te matando + VOCÊ MORREU ---------------- */
+
+/* ---------------- ele te viu entrar no armário ---------------- */
+{const _enterL=enterLocker;enterLocker=function(L){if(PROF.ready&&PROF.active&&!PROF.dead&&(PROF.state==='chase'||PROF.state==='alert')&&(PROF.lastSeenT||0)<1.2&&PROF.pos.distanceTo(new THREE.Vector3(P.pos.x,P.y,P.pos.z))<20){PROF.sawLocker=L;PROF.lw=0;PROF.lwPath=0;PROF.lwDone=false;}return _enterL(L);};}
+function lockerHunt(dt,me,dist){const L=PROF.sawLocker,v=PROF.v;
+  // você saiu do armário: volta a perseguir normal
+  if(P.locker!==L&&!LA){PROF.sawLocker=null;PROF.state='chase';PROF.lastSeen=me.clone();PROF.lastSeenT=0;return false;}
+  const front=L.front.clone();const d=Math.hypot(PROF.pos.x-front.x,PROF.pos.z-front.z);
+  if(d>.55&&!PROF.lwAt){PROF.lwPath-=dt;if(PROF.lwPath<=0){PROF.lwPath=.5;PROF.path=navPath(PROF.pos,front);PROF.pi=1;}pPlay('sprint',.2);moveAgent(PROF,null,DF().chase,dt);}
+  else{PROF.lwAt=true;PROF.lw+=dt;pPlay('idle',.3);const ty=Math.atan2(L.g.position.x-PROF.pos.x,L.g.position.z-PROF.pos.z);PROF.yaw=angLerp(PROF.yaw,ty,Math.min(1,dt*5));
+    PROF.lwG=(PROF.lwG||0)-dt;if(PROF.lwG<=0){PROF.lwG=1.1+Math.random()*.6;growl(PROF.pos.x,PROF.pos.z);heartbeat(.9);if(Math.random()<.5){L.pulse=.25;thud(.4);}}
+    const wait={facil:4.5,normal:4,dificil:3.4,pesadelo:2.8}[window.DIFF_ID]||4;
+    if(PROF.lw>wait&&!PROF.lwDone){PROF.lwDone=true;const ch={facil:.25,normal:.45,dificil:.65,pesadelo:.85}[window.DIFF_ID]||.45;
+      if(Math.random()<ch){// ele abre o armário e te puxa
+        L.pulse=1;creakDoor(true);slam();setTimeout(()=>{if(P.locker===L)killScene('prof');},350);}
+      else{PROF.sawLocker=null;PROF.lwAt=false;PROF.state='roam';PROF.path=null;PROF.lastSeen=null;PROF.avoidSeg=20;
+        const away=randomNode(p=>p.distanceTo(PROF.pos)>14&&p.distanceTo(PROF.pos)<30);if(away){PROF.path=navPath(PROF.pos,away);PROF.pi=1;}hint('Ele desistiu… por enquanto.',2);}}}
+  v.mixer.update(dt);PROF.root.position.copy(PROF.pos);PROF.root.rotation.y=PROF.yaw;v.follow();musicUpdate(dt,true,dist);return true;}
 let KS=null;
 function killScene(who){if(KS||MX.dead||MX.won)return;if(who==='prof'&&!PROF.ready)who='guard';if(who==='guard'&&!GUARD.ready){die('x');return;}
   MX.dead=true;MX.lock=true;if(P.locker){P.locker=null;$$('lockerView').hidden=true;$$('hidden').hidden=true;}
@@ -2501,21 +2526,58 @@ function rattle(){if(!ac)return;const t=ac.currentTime;for(let i=0;i<3;i++){cons
 window.__tryUnlock=d=>{const k=d.locked;if(hasItem(k)){[d,d.partner].concat(doors.filter(o=>o.locked===k)).forEach(o=>{if(o)o.locked=null;});{const ki=MX.inv.findIndex(x=>x&&x.id===k);if(ki>=0){MX.inv[ki]=null;if(MX.sel===ki)MX.sel=-1;renderInv();}}hint('Destrancou com a '+ITEMS[k].n+'.',2);clickSound();return true;}
   rattle();makeNoise(P.pos,8);hint('Trancada. Precisa: '+ITEMS[k].n+'.',2);return false;};
 // gravações de voz (o texto aparece como legenda; window.__voz[i] = URL do áudio quando tiver a voz)
+// fitas: cada uma faz sentido sozinha, em qualquer ordem
 const GRAV=[
- ['Zelador','Sexta, onze da noite. O professor de Educação Física ainda tá aqui. Disse que ia “preparar a quadra”. Ninguém prepara quadra de madrugada.'],
- ['Zelador','Achei apito espalhado no auditório. Dezenas. Todos com marca de dente.'],
- ['Professor','Quem fica depois do sinal… fica pra sempre. Regra é regra.'],
- ['Zelador','A chave do portão não tá na portaria. Ele escondeu numa das salas trancadas. Se alguém ouvir isso: não corre perto dele. Ele escuta tudo.'],
- ['Segurança','Central, aqui é a ronda. Tem luz acesa no 2º ano… vou subir pra ver. Se eu não responder em dez minutos… chama alguém.']];
-window.__voz=window.__voz||[];let gravN=0;
+ ['Zelador · 31/10','Se alguém achar essa fita: não fica no colégio depois do sinal. Todo ano, nessa noite, o professor de Educação Física faz a "chamada" à meia-noite. Quem ainda tá aqui dentro… não sai mais.'],
+ ['Zelador · 30/10','Achei os apitos no auditório. Dezenas, atrás da cortina. Todos com marca de dente. E embaixo de cada um tem um nome escrito à mão.'],
+ ['Zelador · 31/10, 22h','Escondi a chave do portão numa das salas trancadas, pra ninguém entrar hoje. Se você tá ouvindo isso, pega ela e sai. Não olha pra trás.'],
+ ['Áudio no celular · 2003','Mãe… o professor disse que o treino do interclasse vai até mais tarde. Ele tá apitando sem parar na quadra, mas não tem mais ninguém aqui. Eu vou lá ver o que é.'],
+ ['Professor','Chamada. Trinta nomes. Faltam poucos pra turma ficar completa. Quem fica depois do sinal… fica pra sempre. Regra é regra.'],
+ ['Rádio · 2003','…continua desaparecido o estudante Davi, de 14 anos, aluno do 9º ano do Colégio RSS. Ele foi visto pela última vez durante um treino noturno na quadra. O caso segue sem respostas…'],
+ ['Segurança · rádio','Central, aqui é a ronda. Tem uma luz acesa no 2º ano… e alguém apitando. Vou subir pra ver. Se eu não responder em dez minutos… chama alguém. Por favor.'],
+ ['Diretora','Pedi de novo pra trocarem o professor de Educação Física. Disseram que ele trabalha aqui desde 1998. Fui olhar os anuários. Ele não aparece em nenhuma foto. Em nenhuma.'],
+ ['Zelador · dica','Ele não enxerga bem no escuro, mas escuta tudo. Não corre perto dele. Se esconde no armário… mas não deixa ele te ver entrando.'],
+ ['Professor · sussurro','Achei você. Sabia que a sua carteira no 9º A… é a mesma onde o Davi sentava?'],
+ ['Fita do ritual','(voz do professor, ofegante) Vinte e nove. O segurança foi o vinte e nove. Hoje a turma fecha. Só falta o trigésimo… e ele voltou sozinho pra buscar a mochila.']];
+window.__voz=window.__voz||[];let gravN=0;const gravLeft=GRAV.map((_,i)=>i).filter(i=>i!==10).sort(()=>Math.random()-.5);MX.tapes=[];
 document.body.insertAdjacentHTML('beforeend','<div id="sub" hidden><b id="subW"></b><span id="subT"></span></div>');
 document.head.insertAdjacentHTML('beforeend','<style>#sub{position:fixed;left:50%;bottom:calc(150px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(560px,86vw);background:rgba(0,0,0,.72);border-left:3px solid #e0291f;padding:10px 14px;color:#f2ead6;font:500 14px/1.45 var(--f-body);z-index:8;pointer-events:none}#sub b{display:block;color:#e0291f;font-size:11px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:3px}</style>');
 let subT=0;
-function playRecording(i){const [who,txt]=GRAV[i%GRAV.length];$$('subW').textContent='📼 Gravação '+(i+1)+' · '+who;$$('subT').textContent=txt;$$('sub').hidden=false;subT=Math.max(5,txt.length/14);
+function takeTape(fixed){let i=fixed;if(i==null){i=gravLeft.length?gravLeft.pop():-1;if(i<0)return;}if(!MX.tapes.includes(i))MX.tapes.push(i);addItem('fita');playRecording(i);
+  if(MX.tapes.length>=6&&!MX.apitoOn){MX.apitoOn=true;setTimeout(()=>{const L=lockers.find(l=>l.label==='armário dos professores');const p=L?L.front.clone():new THREE.Vector3(9,0,-14);spawnItem('apito',p);
+    hint('Juntando as fitas… o apito original deve estar no armário da sala dos professores. Se ele quebrar, tudo acaba.',5);},Math.max(5000,subT*1000));}}
+function playRecording(i){const [who,txt]=GRAV[i];$$('subW').textContent='📼 Fita · '+who;$$('subT').textContent=txt;$$('sub').hidden=false;subT=Math.max(5,txt.length/14);
   const url=window.__voz[i];if(url){try{const a=new Audio(url);a.volume=SET.vol/100;a.play().catch(()=>{});}catch(_){}}
   else if(ac){const t=ac.currentTime;const s=ac.createBufferSource();s.buffer=noiseBuf;const f=ac.createBiquadFilter();f.type='bandpass';f.frequency.value=1800;const g=ac.createGain();g.gain.setValueAtTime(.06,t);g.gain.setValueAtTime(.06,t+.4);g.gain.exponentialRampToValueAtTime(.0001,t+.7);s.connect(f).connect(g).connect(master);s.start(t,Math.random(),.8);}}
-function scatterStory(){const ok=p=>p.z<21.5&&!inLocked(p)&&!(p.x>9&&p.x<21&&p.z>14);
-  for(let i=0;i<GRAV.length;i++){const p=randomNode(ok);if(p)spawnItem('gravacao',p,{onTake:()=>{playRecording(gravN++);return true;}});}
+
+/* bilhetes e pistas pelo colégio */
+const NOTES=[
+ ['Recorte de jornal · 2003','ALUNO DESAPARECE EM COLÉGIO DA ZONA NORTE\n\nDavi, 14 anos, do 9º ano A, não voltou para casa depois de um treino noturno na quadra do Colégio RSS. O professor responsável disse à polícia que "dispensou todos os alunos às 22h". Ninguém mais foi visto saindo.'],
+ ['Lista de chamada · 9º A','CHAMADA — TREINO NOTURNO\n\n01. Ana ✗\n02. Bruno ✗\n03. Carla ✗\n04. Davi ✗✗✗\n…\n29. ✗\n30. ______  ← (o seu nome está escrito aqui, à caneta vermelha)'],
+ ['Página de diário','Toda vez que eu apito, alguém escuta.\nO primeiro foi o Davi. Ele veio quando eu chamei.\nAgora eles todos vêm. Ficam em fila na quadra, esperando o treino que nunca acaba.\nSó falta um.']];
+Object.assign(ITEMS,{nota:{n:'Bilhete',ic:'📄'},fita:{n:'Fitas',ic:'📼'},apito:{n:'Apito velho',ic:'🎺'}});Object.assign(itemLook,{apito:[0xc8c8d0,'box',[.09,.045,.05]]});Object.assign(itemLook,{nota:[0xe8e0c8,'box',[.18,.005,.24]]});
+document.body.insertAdjacentHTML('beforeend','<div id="note" hidden><div class="pp"><b id="noteT"></b><pre id="noteB"></pre><button id="noteX" type="button">Fechar</button></div></div>');
+document.head.insertAdjacentHTML('beforeend','<style>#note{position:fixed;inset:0;z-index:25;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:20px}#note .pp{width:min(440px,100%);background:#e8e0c8;color:#2a1a10;border-radius:4px;padding:22px 22px 16px;box-shadow:0 20px 60px #000;transform:rotate(-1.2deg);background-image:repeating-linear-gradient(transparent 0 27px,rgba(60,80,140,.18) 27px 28px)}#note b{display:block;font:700 13px var(--f-body);letter-spacing:.12em;text-transform:uppercase;color:#7a1414;margin-bottom:10px}#note pre{white-space:pre-wrap;font:500 15px/1.75 "Special Elite",monospace;margin:0 0 14px}#note button{font:700 13px var(--f-body);letter-spacing:.1em;text-transform:uppercase;padding:10px 18px;border-radius:999px;border:0;background:#2a1a10;color:#e8e0c8;cursor:pointer}</style>');
+function readNote(i){const [t,b]=NOTES[i];$$('noteT').textContent=t;$$('noteB').textContent=b;$$('note').hidden=false;MX.lock=true;MX.lookOK=false;try{document.exitPointerLock&&document.exitPointerLock();}catch(_){}if(ac){const t0=ac.currentTime;const s=ac.createBufferSource();s.buffer=noiseBuf;const bp=ac.createBiquadFilter();bp.type='highpass';bp.frequency.value=1500;const g=ac.createGain();g.gain.setValueAtTime(.4,t0);g.gain.exponentialRampToValueAtTime(.0001,t0+.35);s.connect(bp).connect(g).connect(master);s.start(t0,Math.random(),.4);}}
+$$('noteX').addEventListener('click',e=>{e.stopPropagation();$$('note').hidden=true;MX.lock=false;if(!isTouch)tryLock();});
+
+// lista das fitas que você já pegou (pode ouvir de novo, em qualquer ordem)
+document.body.insertAdjacentHTML('beforeend','<div id="tapes" hidden><div class="tb"><b>📼 Suas fitas</b><div id="tapeL"></div><button id="tapeX" type="button">Fechar</button></div></div>');
+document.head.insertAdjacentHTML('beforeend','<style>#tapes{position:fixed;inset:0;z-index:25;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:20px}#tapes .tb{width:min(420px,100%);max-height:80vh;overflow:auto;background:#0d0f15;border:1px solid rgba(242,234,214,.18);border-radius:14px;padding:18px}#tapes b{display:block;font:700 13px var(--f-body);letter-spacing:.14em;text-transform:uppercase;color:#e0291f;margin-bottom:10px}#tapeL button{display:block;width:100%;text-align:left;margin:0 0 6px;padding:11px 12px;border-radius:9px;border:1px solid rgba(242,234,214,.14);background:rgba(255,255,255,.04);color:#f2ead6;font:600 14px var(--f-body);cursor:pointer}#tapeX{margin-top:6px;padding:10px 18px;border-radius:999px;border:0;background:#f2ead6;color:#14100a;font:700 13px var(--f-body);letter-spacing:.1em;text-transform:uppercase;cursor:pointer}</style>');
+function openTapes(){const l=$$('tapeL');l.innerHTML=MX.tapes.map(i=>'<button type="button" data-t="'+i+'">▶ '+GRAV[i][0]+'</button>').join('')||'<p style="color:#aaa">Nenhuma fita ainda.</p>';
+  l.querySelectorAll('button').forEach(b=>{b.onclick=e=>{e.stopPropagation();$$('tapes').hidden=true;MX.lock=false;playRecording(+b.dataset.t);};fastTap(b);});$$('tapes').hidden=false;MX.lock=true;MX.lookOK=false;try{document.exitPointerLock&&document.exitPointerLock();}catch(_){}}
+$$('tapeX').addEventListener('click',e=>{e.stopPropagation();$$('tapes').hidden=true;MX.lock=false;if(!isTouch)tryLock();});
+
+/* ---------------- final verdadeiro: quebrar o apito ---------------- */
+function trueEnding(){if(MX.won||MX.dead)return;MX.won=true;MX.lock=true;const ki=MX.inv.findIndex(x=>x&&x.id==='apito');if(ki>=0){MX.inv[ki]=null;MX.sel=-1;renderInv();}
+  handReach(()=>{crack(1.6);window.__apito(.25,.6);},false);
+  setTimeout(()=>{scream(1.6,2.4,.55);sting(1.4);KSshake();if(PROF.ready&&PROF.active&&!PROF.dead){PROF.dead=true;PROF.state='dead';PROF.fall=0;}
+    let n=0;const iv=setInterval(()=>{MX.lightK=Math.random()<.5?0:1;applyLights();if(++n>14){clearInterval(iv);}},90);},700);
+  setTimeout(()=>{const f=$$('fade');f.style.background='#fff';f.style.transition='opacity 2.2s';f.style.opacity=1;},2400);
+  setTimeout(()=>{const f=$$('fade');f.style.background='#000';endScreen(true,'O apito quebrou. Lá fora, na quadra, 29 vultos esperavam em fila… e um a um foram sumindo. O último olhou pra você e sorriu: era um menino do 9º ano. Era o Davi. Ele finalmente pôde ir pra casa.');$$('endT').textContent='FINAL VERDADEIRO';unlock('mochila');},5000);}
+function scatterStory(){const ok=p=>p.z<21.5&&!inLocked(p)&&!(p.x>9&&p.x<21&&p.z>14);spawnItem('gravacao',new THREE.Vector3(-.4,F1,9.6),{onTake:()=>{takeTape(10);return true;}});
+  for(let i=0;i<7;i++){const p=randomNode(ok);if(p)spawnItem('gravacao',p,{onTake:()=>{takeTape(null);return true;}});}
+  for(let i=0;i<NOTES.length;i++){const p=randomNode(ok);if(p)spawnItem('nota',p,{onTake:()=>{readNote(i);return true;}});}
   const k3=randomNode(ok),ka=randomNode(ok);if(k3)spawnItem('chave3',k3);if(ka)spawnItem('chaveaud',ka);{const kc=randomNode(ok);if(kc)spawnItem('chaveseg',kc);}
   // a chave do portão fica dentro de uma das salas trancadas
   const L=LOCKS[(Math.random()*LOCKS.length)|0];if(L){const [a,b,c,e,y0,y1]=L.box;const p=randomNode(p=>p.x>a+.5&&p.x<b-.5&&p.z>c+.5&&p.z<e-.5&&p.y>y0&&p.y<y1);if(p)spawnItem('chaveportao',p);}}
@@ -2523,14 +2585,14 @@ function updateStory(dt){if(subT>0){subT-=dt;if(subT<=0)$$('sub').hidden=true;}
   if(MX.phase==='fuga'&&!MX.won&&!MX.lock&&P.y<.5&&P.pos.z>20.6&&Math.abs(P.pos.x-15)<2.3){if(hasItem('chaveportao')){escapeGate();}else if(!MX.gateMsg){MX.gateMsg=1;hint('O portão está trancado. A chave dele tá escondida numa sala trancada.',3);}}
   if(P.pos.z<19.5)MX.gateMsg=0;}
 function escapeGate(){MX.lock=true;MX.won=true;{const ki=MX.inv.findIndex(x=>x&&x.id==='chaveportao');if(ki>=0){MX.inv[ki]=null;MX.sel=-1;renderInv();}}handReach(()=>{clickSound();clang();gateState='open';gateCol.off=true;let k=0;const iv=setInterval(()=>{k=Math.min(1,k+.04);gate.position.x=15-4.2*k;if(k>=1)clearInterval(iv);},30);},false);
-  setTimeout(()=>{const f=$$('fade');f.style.transition='opacity 1.4s';f.style.opacity=1;setTimeout(()=>endScreen(true,'Você abriu o portão e fugiu do colégio. Ninguém vai acreditar no que você viu.'),1500);},1600);}
+  setTimeout(()=>{const f=$$('fade');f.style.transition='opacity 1.4s';f.style.opacity=1;setTimeout(startHomeEnding,1600);},1600);}
 
 /* ---------------- cutscene: subindo a rampa, o ritual, o armário ---------------- */
 const RIT={};let RC=null;
-const ritDoor=doors.find(d=>d.label==='sala'&&Math.abs(d.center.x+9)<.3);
+const ritDoor=doors.find(d=>d.label==='sala'&&Math.abs(d.center.x-3)<.3);
 const hallLocker=makeLocker(-6.2,3.36,F1,0,'armário do corredor');
 {// cenário do ritual (escondido até a cena): vítima na mesa da professora, velas, sangue, luz vermelha
- const g=new THREE.Group();g.visible=false;scene.add(g);RIT.g=g;
+ const g=new THREE.Group();g.visible=false;g.position.x=12;scene.add(g);RIT.g=g;
  const wax=std(0xe8dcc0,.6),flameM=new THREE.MeshBasicMaterial({color:0xffb040});RIT.flames=[];
  for(let i=0;i<9;i++){const a=i/9*Math.PI*2,x=-13.0+Math.cos(a)*1.25,z=11.5+Math.sin(a)*1.6;const h=.18+Math.random()*.2;
    const c=new THREE.Mesh(new THREE.CylinderGeometry(.035,.04,h,8),wax);c.position.set(x,F1+h/2,z);g.add(c);const f=new THREE.Mesh(new THREE.SphereGeometry(.03,6,5),flameM);f.scale.y=1.8;f.position.set(x,F1+h+.04,z);g.add(f);RIT.flames.push(f);}
@@ -2538,17 +2600,27 @@ const hallLocker=makeLocker(-6.2,3.36,F1,0,'armário do corredor');
  const pool=new THREE.Mesh(new THREE.CircleGeometry(.9,22),blood);pool.rotation.x=-Math.PI/2;pool.position.set(-13.3,F1+.012,11.3);pool.scale.set(1,1.4,1);g.add(pool);
  for(let i=0;i<6;i++){const d=new THREE.Mesh(new THREE.CircleGeometry(.06+Math.random()*.1,10),blood);d.rotation.x=-Math.PI/2;d.position.set(-13.3+(Math.random()-.5)*3,F1+.013,11.3+(Math.random()-.5)*4);g.add(d);}
  const desk=new THREE.Mesh(new THREE.BoxGeometry(.62,.02,1.42),blood);desk.position.set(-14,F1+.775,11.5);g.add(desk);
- RIT.red=pl(0xff2010,0,7,-13.2,F1+1.2,11.5);lamps[lamps.length-1].noK=true;
+ RIT.red=pl(0xff2010,0,7,-1.2,F1+1.2,11.5);lamps[lamps.length-1].noK=true;
  // vítima: um segundo segurança (mesmo modelo), deitado na mesa
  try{new THREE.GLTFLoader().parse(b64buf('g-glb'),'',gg=>{const m=gg.scene;m.updateMatrixWorld(true);const hd=m.getObjectByName('Bip01_Head');m.scale.multiplyScalar(1.62/hd.getWorldPosition(new THREE.Vector3()).y);
    const mat=new THREE.MeshStandardMaterial({skinning:true,map:b64tex('g-body','image/jpeg'),color:0x8a7070,roughness:.8}),mh=new THREE.MeshStandardMaterial({skinning:true,map:b64tex('g-head','image/jpeg'),color:0xb09090,roughness:.6});
    m.traverse(o=>{if(o.isMesh){o.material=o.material.name==='head'?mh:mat;o.frustumCulled=false;}});
    const mx=new THREE.AnimationMixer(m);const a=mx.clipAction(gg.animations.find(c=>c.name==='idle')||gg.animations[0]);a.play();mx.update(.1);a.paused=true;
    const r=new THREE.Group();r.add(m);r.rotation.order='YXZ';r.rotation.set(-Math.PI/2,Math.PI,0);r.position.set(-14,F1+.92,10.7);g.add(r);RIT.victim=r;},e=>console.warn(e));}catch(e){console.warn(e);}}
+{const wr=(txt,w,h,x,y,z,ry,size)=>{const t=ctex(512,Math.round(512*h/w),(g,W,H)=>{g.clearRect(0,0,W,H);g.fillStyle='rgba(150,0,0,.92)';g.font='bold '+size+'px "Special Elite",Impact,sans-serif';g.textAlign='center';g.textBaseline='middle';const lines=txt.split('\n');lines.forEach((l,i)=>{const yy=H/2+(i-(lines.length-1)/2)*size*1.05;g.fillText(l,W/2,yy);for(let k=0;k<l.length;k+=2){if(Math.random()<.5){const xx=W/2-(l.length*size*.27)+k*size*.55;g.fillRect(xx,yy+size*.3,3,Math.random()*size*1.4);}}});});
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshStandardMaterial({map:t,transparent:true,roughness:.6,depthWrite:false}));m.position.set(x,y,z);m.rotation.y=ry;RIT.g.add(m);};
+ // (posições locais do grupo: +12 em x vira a sala do 3º ano)
+ wr('QUEM FICA\nDEPOIS DO SINAL\nFICA PRA SEMPRE',4.5,2.2,8.85-12,F1+2.1,13,-Math.PI/2,64);
+ wr('FALTA 1',3,1.3,8.85-12,F1+1.6,18.4,-Math.PI/2,110);
+ wr('DAVI 2003',2.6,1,-5.5,F1+2.5,21.5,Math.PI,90);
+ wr('|||| |||| |||| |||| |||| ||||',4.4,.8,-11,F1+1.5,21.5,Math.PI,60);
+ wr('CHAMADA',3,1,-8.5,F1+3.2,21.5,Math.PI,90);
+ const circ=ctex(512,512,(g,W,H)=>{g.clearRect(0,0,W,H);g.strokeStyle='rgba(140,0,0,.85)';g.lineWidth=10;g.beginPath();g.arc(W/2,H/2,W*.42,0,7);g.stroke();g.lineWidth=5;g.beginPath();g.arc(W/2,H/2,W*.34,0,7);g.stroke();g.fillStyle='rgba(140,0,0,.85)';g.font='bold 26px monospace';g.textAlign='center';for(let i=0;i<30;i++){const a=i/30*Math.PI*2;g.save();g.translate(W/2+Math.cos(a)*W*.38,H/2+Math.sin(a)*W*.38);g.rotate(a+Math.PI/2);g.fillText(i<29?'✗':'?',0,8);g.restore();}});
+ const cm=new THREE.Mesh(new THREE.PlaneGeometry(3.4,3.4),new THREE.MeshStandardMaterial({map:circ,transparent:true,depthWrite:false,roughness:.7}));cm.rotation.x=-Math.PI/2;cm.position.set(-13,F1+.015,11.5);RIT.g.add(cm);}
 function camSet(pos,yaw,pitch){camera.position.copy(pos);camera.rotation.set(pitch,yaw,0);flash.position.set(pos.x+Math.cos(yaw)*.18,pos.y-.18,pos.z-Math.sin(yaw)*.18);camera.getWorldDirection(fwd);flash.target.position.copy(flash.position).addScaledVector(fwd,10);}
 function startRitual(){RC={t:0};MX.lock=true;FPH&&(FPH.visible=false);const f=$$('fade');f.style.transition='opacity .6s';f.style.opacity=1;
   RIT.g.visible=true;RIT.red.intensity=2.2;musicStart();
-  if(PROF.ready){PROF.active=true;PROF.state='ritual';PROF.root.visible=true;PROF.pos.set(-12.6,F1,11.5);PROF.yaw=-Math.PI/2;pPlay('idle',.01);}
+  if(PROF.ready){PROF.active=true;PROF.state='ritual';PROF.root.visible=true;PROF.pos.set(-0.6,F1,11.5);PROF.yaw=-Math.PI/2;pPlay('idle',.01);}
   if(ritDoor){ritDoor.open=false;}}
 const rampPts=[[10.5,15],[10.5,3.2],[9.6,1.6]];
 function along(pts,k){const seg=[];let L=0;for(let i=1;i<pts.length;i++){const l=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]);seg.push(l);L+=l;}let d=k*L;for(let i=0;i<seg.length;i++){if(d<=seg[i]||i===seg.length-1){const u=Math.min(1,d/seg[i]);return [pts[i][0]+(pts[i+1][0]-pts[i][0])*u,pts[i][1]+(pts[i+1][1]-pts[i][1])*u,Math.atan2(-(pts[i+1][0]-pts[i][0]),-(pts[i+1][1]-pts[i][1]))];}d-=seg[i];}}
@@ -2560,11 +2632,11 @@ function updateRitual(dt){if(!RC)return;RC.t+=dt;const t=RC.t,f=$$('fade');
     if(t>4&&!RC.b){RC.b=1;f.style.transition='opacity .5s';f.style.opacity=1;}return;}
   if(!RC.c){RC.c=1;f.style.opacity=0;}
   if(t<7.4){// corredor do 1º andar até a porta do 2º ano
-    const k=sm(4.6,7.4,t),x=-4.6-(8.9-4.6)*k;camSet(new THREE.Vector3(x,F1+1.55+Math.sin(t*9)*.03,5.0),Math.PI/2*(1-sm(6.6,7.4,t))+Math.PI*sm(6.6,7.4,t),.0);
+    const k=sm(4.6,7.4,t),x=8.4-(8.4-3.1)*k;camSet(new THREE.Vector3(x,F1+1.55+Math.sin(t*9)*.03,5.0),Math.PI/2*(1-sm(6.6,7.4,t))+Math.PI*sm(6.6,7.4,t),.0);
     if(t>5.5&&!RC.w){RC.w=1;window.__apito(.25,.05);}return;}
   if(!RC.d){RC.d=1;if(!handReach(()=>{if(ritDoor){ritDoor.open=true;creakDoor(true);}},false)&&ritDoor){ritDoor.open=true;creakDoor(true);}}
-  const tgt=new THREE.Vector3(-13.6,F1+1.1,11.4);
-  const p=new THREE.Vector3(-8.9,F1+1.55,5.0).lerp(new THREE.Vector3(-9.2,F1+1.5,7.7),sm(8.3,9.9,t));
+  const tgt=new THREE.Vector3(-1.6,F1+1.1,11.4);
+  const p=new THREE.Vector3(3.1,F1+1.55,5.0).lerp(new THREE.Vector3(2.8,F1+1.5,7.7),sm(8.3,9.9,t));
   let yaw=angLerp(Math.PI,Math.atan2(-(tgt.x-p.x),-(tgt.z-p.z)),sm(8.6,9.8,t)),pitch=-.12*sm(8.6,9.8,t);
   if(t>9.8&&!RC.e){RC.e=1;heartbeat(.7);setTimeout(()=>heartbeat(.8),550);}
   if(t>12.2&&!RC.g){RC.g=1;PROF.turn=1;window.__apito(1.3,.3);}
@@ -2573,8 +2645,8 @@ function updateRitual(dt){if(!RC)return;RC.t+=dt;const t=RC.t,f=$$('fade');
   camSet(p,yaw,pitch);
   if(t>14.2&&!RC.i){RC.i=1;// dentro do armário do corredor
     const L=hallLocker;P.locker=L;P.pos.set(L.inside.x,0,L.inside.z);P.y=L.y0;P.yaw=Math.atan2(-L.fwd.x,-L.fwd.z);P.pitch=-.05;player.visible=false;P.hidden=true;$$('hidden').hidden=false;const lv=$$('lockerView');lv.hidden=false;lv.style.opacity=1;
-    RIT.g.visible=false;RIT.red.intensity=0;
-    PROF.state='script';PROF.pos.set(-9,F1,7.4);PROF.path=[new THREE.Vector3(-9,F1,5.2),new THREE.Vector3(-6.2,F1,5.3),new THREE.Vector3(2,F1,5),new THREE.Vector3(8,F1,4.5),new THREE.Vector3(8.2,F1,1.5)];PROF.pi=0;PROF.turn=0;
+    RIT.red.intensity=1.6;if(ritDoor)ritDoor.open=false;
+    PROF.state='script';PROF.pos.set(3,F1,7.4);PROF.path=[new THREE.Vector3(3,F1,5.2),new THREE.Vector3(-3,F1,5.2),new THREE.Vector3(-6.2,F1,5.3),new THREE.Vector3(-12,F1,5),new THREE.Vector3(-18,F1,4.8)];PROF.pi=0;PROF.turn=0;
     MX.lookOK=true;f.style.transition='opacity 1.2s';f.style.opacity=0;hint('Fique quieto…',3);}
   if(t>14.2){RC=null;}}
 // passos do professor no corredor enquanto você está no armário
@@ -2586,9 +2658,10 @@ function updateProfScript(dt){if(PROF.state!=='script')return;const v=PROF.v;pPl
     setObjective('Fuja do colégio: ache a chave do portão',null);hint('Ele foi embora… por enquanto. Saia do armário e fuja do colégio.',4);}}
 let hbt2=0;function heartbeatTick(dt){hbt2-=dt;if(hbt2<=0){hbt2=.55;heartbeat(.5);}}
 window.__mxLock=()=>MX.lock&&!MX.lookOK;
+{const lv=document.getElementById('lockerView');if(lv&&lv.parentElement!==document.body){document.body.appendChild(lv);lv.style.zIndex=5;}}
 setTimeout(function freeB64(){if(!(PROF.ready&&GUARD.ready&&RIT.victim)){setTimeout(freeB64,3000);return;}document.querySelectorAll('script[type="text/plain"]').forEach(e=>{e.textContent='';});},12000);
 renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();document.body.insertAdjacentHTML('beforeend','<div id="glLost" style="position:fixed;inset:0;z-index:99;background:#000;color:#f2ead6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:24px;font:600 16px var(--f-body)"><b style="font:400 30px var(--f-display);color:#f2c230">O jogo travou</b>O celular ficou sem memória de vídeo.<button onclick="location.reload()" style="font:700 16px var(--f-body);padding:12px 22px;border-radius:999px;border:0;background:#f2c230;color:#14100a">Recarregar</button></div>');},false);
-window.__MX={sfx:()=>{scream(1,1,1);sting(1);heavyStep(P.pos.x+3,P.pos.z,P.y,1,true);growl(P.pos.x+2,P.pos.z);for(let i=0;i<8;i++)ambientEvent();MUS.on||musicStart();lowPiano();return "ok"},kill:w=>killScene(w),scare:(k)=>{SC.last="";const o=Math.random;if(k){Math.random=()=>({ghost:.05,face:.4,slam:.2})[k];}doScare();Math.random=o;return JSON.stringify({v:GHOST.visible,p:GHOST.position.toArray()});},hold:()=>{SC.ghost=999;},step:(n)=>{for(let i=0;i<n;i++)mechUpdate(.05);},MX,PROF,GUARD,NAV,onBagTaken,startBathCut,takeLantern,startRitual,worldItems,addItem};
+window.__MX={homeEnd:()=>{MX.won=true;startHomeEnding();},lockTest:(i)=>{const L=lockers[i];P.locker=L;P.pos.set(L.inside.x,0,L.inside.z);P.y=L.y0;P.yaw=Math.atan2(-L.fwd.x,-L.fwd.z);P.pitch=-.05;P.hidden=true;$$('lockerView').hidden=false;$$('lockerView').style.opacity=1;PROF.active=true;PROF.root.visible=true;PROF.state='chase';PROF.pos.copy(L.front).addScaledVector(L.fwd,4);PROF.sawLocker=L;PROF.lw=0;PROF.lwAt=false;PROF.lwDone=false;PROF.lwPath=0;return L.label;},sfx:()=>{scream(1,1,1);sting(1);heavyStep(P.pos.x+3,P.pos.z,P.y,1,true);growl(P.pos.x+2,P.pos.z);for(let i=0;i<8;i++)ambientEvent();MUS.on||musicStart();lowPiano();return "ok"},kill:w=>killScene(w),scare:(k)=>{SC.last="";const o=Math.random;if(k){Math.random=()=>({ghost:.05,face:.4,slam:.2})[k];}doScare();Math.random=o;return JSON.stringify({v:GHOST.visible,p:GHOST.position.toArray()});},hold:()=>{SC.ghost=999;},step:(n)=>{for(let i=0;i<n;i++)mechUpdate(.05);},MX,PROF,GUARD,NAV,onBagTaken,startBathCut,takeLantern,startRitual,worldItems,addItem};
 
 /* ---------------- item na mão (lanterna, comida, pilha…) ---------------- */
 const HELD=new THREE.Group();camera.add(HELD);HELD.position.set(.22,-.24,-.5);HELD.scale.setScalar(.9);let heldId=null,heldItem=null,HANIM=null;
@@ -2880,6 +2953,48 @@ function updateSegDoor(dt){if(!SD||!SD.inLock)return;SD.open=false;SD.c.off=fals
         const lim={facil:6,normal:9,dificil:13,pesadelo:12}[window.DIFF_ID]||9;
         if(PROF.bang>lim){PROF.bang=0;if(window.DIFF_ID==='pesadelo'){SD.inLock=false;SD.open=true;slam();sting(1);hint('Ele arrombou a porta!',2);}else{PROF.state='roam';PROF.path=null;PROF.lastSeen=null;PROF.avoidSeg=25;hint('As batidas pararam…',2);}}}
       else{GUARD.path=null;}}}}
+
+/* ---------------- final da fuga: em casa, na cama… o apito na janela ---------------- */
+const HOME={x:200,z:200};let HE=null;
+{const g=new THREE.Group();g.visible=false;scene.add(g);HOME.g=g;const X=HOME.x,Z=HOME.z;
+ const wallM=std(0x5a6478,.9),floorM=std(0x4a3628,.8),add=(w,h,d,m,x,y,z)=>{const b=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);b.position.set(X+x,y,Z+z);g.add(b);return b;};
+ add(4.4,.1,4.4,floorM,0,-.05,0);add(4.4,.1,4.4,wallM,0,2.75,0);add(.1,2.8,4.4,wallM,-2.2,1.4,0);add(4.4,2.8,.1,wallM,0,1.4,-2.2);add(4.4,2.8,.1,wallM,0,1.4,2.2);
+ // parede da janela (x=+2.2) com buraco
+ add(.1,1.0,4.4,wallM,2.2,.5,0);add(.1,.8,4.4,wallM,2.2,2.4,0);add(.1,1.0,1.6,wallM,2.2,1.5,-1.4);add(.1,1.0,1.6,wallM,2.2,1.5,1.4);
+ const fr=std(0xd8d0c0,.6);add(.14,.06,1.24,fr,2.2,1.0,0);add(.14,.06,1.24,fr,2.2,2.0,0);add(.14,1.06,.06,fr,2.2,1.5,-.6);add(.14,1.06,.06,fr,2.2,1.5,.6);add(.14,1.0,.04,fr,2.2,1.5,0);
+ const glass=new THREE.Mesh(new THREE.PlaneGeometry(1.2,1),new THREE.MeshStandardMaterial({color:0x223355,transparent:true,opacity:.18,roughness:.05}));glass.rotation.y=-Math.PI/2;glass.position.set(X+2.18,1.5,Z);g.add(glass);
+ // cortina meio aberta
+ const cur=std(0x3a2a4a,.9);add(.05,1.5,.5,cur,2.05,1.55,-.85);add(.05,1.5,.4,cur,2.05,1.55,.95);
+ // céu e rua lá fora
+ const sky=new THREE.Mesh(new THREE.PlaneGeometry(30,12),new THREE.MeshBasicMaterial({color:0x050a18,fog:false}));sky.rotation.y=-Math.PI/2;sky.position.set(X+14,4,Z);g.add(sky);
+ const moon=new THREE.Mesh(new THREE.CircleGeometry(.6,24),new THREE.MeshBasicMaterial({color:0xe8ecff,fog:false}));moon.rotation.y=-Math.PI/2;moon.position.set(X+13.9,6.2,Z-3.5);g.add(moon);
+ add(8,.1,8,std(0x1a1d22,.9),6.2,-.05,0);
+ // cama, travesseiro, coberta, criado-mudo, abajur, mochila no chão
+ add(1.1,.45,2.1,std(0x5a3a22,.7),-1.4,.225,.4);add(1,.12,2,std(0xe8e4dc,.8),-1.4,.5,.4);add(.8,.1,.4,std(0xf4f0e8,.8),-1.4,.6,1.15);add(1.04,.08,1.3,std(0x28407a,.85),-1.4,.6,.0);
+ add(.5,.55,.45,std(0x5a3a22,.7),-1.4,.275,1.85);const lamp=add(.16,.25,.16,std(0xe8d8a0,.5),-1.4,.67,1.85);
+ const bag=add(.4,.48,.22,std(0x1f4fb8,.7),-.4,.24,1.6);bag.rotation.y=.6;
+ add(1.2,.8,.5,std(0x6a4a2a,.7),-.6,.4,-1.9);// cômoda
+ HOME.light=new THREE.PointLight(0x7a8cff,0,7,2);HOME.light.position.set(X+1.6,2,Z);g.add(HOME.light);
+ HOME.lamp=new THREE.PointLight(0xffb060,0,3,2);HOME.lamp.position.set(X-1.4,.95,Z+1.85);g.add(HOME.lamp);}
+function startHomeEnding(){HE={t:0};MX.lock=true;HOME.g.visible=true;HOME.light.intensity=.45;HOME.lamp.intensity=.45;
+  scene.fog.density=.02;if(baseHemi)baseHemi.intensity=.12;
+  if(PROF.ready){PROF.active=true;PROF.state='ending';PROF.root.visible=true;PROF.root.rotation.set(0,0,0);PROF.pos.set(HOME.x+2.75,-.5,HOME.z+.32);PROF.yaw=-Math.PI/2-.15;PROF.v.mixer.stopAllAction();PROF.v.acts.idle.reset().play();PROF.cur=PROF.v.acts.idle;}
+  if(GUARD.root)GUARD.root.visible=false;GHOST.visible=false;
+  const f=$$('fade');f.style.transition='opacity 2.5s';f.style.opacity=0;hint('Em casa. Finalmente.',2.5);}
+function updateHomeEnding(dt){if(!HE)return;HE.t+=dt;const t=HE.t;P.light=false;flash.visible=false;
+  // deitado na cama olhando pro teto, depois vira a cabeça pra janela
+  const turn=sm(4.2,6.2,t),zoom=sm(7.4,8.2,t);const eye=new THREE.Vector3(HOME.x-1.4,.85,HOME.z+1.05);
+  const breath=Math.sin(t*1.6)*.01;camera.position.set(eye.x,eye.y+breath,eye.z);
+  const lookCeil=new THREE.Vector3(HOME.x-1.4,2.7,HOME.z-.2),lookWin=new THREE.Vector3(HOME.x+2.2,1.85,HOME.z+.45);
+  camera.lookAt(lookCeil.clone().lerp(lookWin,turn));camera.fov=SET.fov-28*zoom;camera.updateProjectionMatrix();
+  if(PROF.ready){PROF.v.mixer.update(dt);PROF.root.position.copy(PROF.pos);PROF.root.rotation.y=PROF.yaw;PROF.v.follow();}
+  if(t>2.6&&!HE.w1){HE.w1=1;window.__apito(.35,.05);}
+  if(t>4.0&&!HE.w2){HE.w2=1;window.__apito(.5,.12);heartbeat(.6);}
+  if(t>5.2&&!HE.hb){HE.hb=1;let n=0;const iv=setInterval(()=>{heartbeat(.8+n*.05);if(++n>4)clearInterval(iv);},520);HOME.lamp.intensity=0;thud(.4);}
+  if(t>6.9&&!HE.w3){HE.w3=1;if(PROF.ready){const w=PROF.v.acts.whistle;PROF.v.mixer.stopAllAction();w.reset().play();PROF.cur=w;}}
+  if(t>7.6&&!HE.w4){HE.w4=1;window.__apito(1.2,.55);sting(1.3);}
+  if(t>8.6&&!HE.end){HE.end=1;const f=$$('fade');f.style.transition='none';f.style.opacity=1;boom();camera.fov=SET.fov;camera.updateProjectionMatrix();
+    setTimeout(()=>endScreen(true,'Você fugiu do colégio… mas o apito te seguiu até em casa. Ele ainda precisa de mais um nome na chamada.'),1200);}}
 /* ---------------- loop das mecânicas ---------------- */
 let mstarted=false;
 function mechUpdate(dt){if(!started||CS.active)return;if(paused){return;}if(!mstarted){mstarted=true;mechStart();}
@@ -2893,8 +3008,9 @@ function mechUpdate(dt){if(!started||CS.active)return;if(paused){return;}if(!mst
 
   // banheiro
   if(MX.phase==='banheiro'&&!BC&&P.y<.5&&Math.hypot(P.pos.x-2.3,P.pos.z-4.25)<1.4)startBathCut();
+  {const cur=P.locker;for(const L of lockers){const hide=L===cur&&!LA;if(L.dl.visible===hide){L.dl.visible=!hide;L.dr.visible=!hide;}}}
   updateHeld(dt);updateBathCut(dt);if(!GUARD.dead)updateGuard(dt);else if(GUARD.mixer)GUARD.mixer.update(0);
-  updateRitual(dt);updateProfScript(dt);updateStory(dt);if(PROF.state!=='ritual'&&PROF.state!=='script')updateProf(dt);else if(PROF.ready&&PROF.state==='ritual'){PROF.v.mixer.update(dt);PROF.root.position.copy(PROF.pos);PROF.root.rotation.y=PROF.yaw;PROF.v.follow();}updateJumpscare(dt);updateScares(dt);updateScares2(dt);updateSoundscape(dt);updateCams(dt);updateSegDoor(dt);updateLockBtn();
+  updateRitual(dt);updateProfScript(dt);updateStory(dt);if(PROF.state!=='ritual'&&PROF.state!=='script')updateProf(dt);else if(PROF.ready&&PROF.state==='ritual'){PROF.v.mixer.update(dt);PROF.root.position.copy(PROF.pos);PROF.root.rotation.y=PROF.yaw;PROF.v.follow();}updateJumpscare(dt);updateScares(dt);updateScares2(dt);updateSoundscape(dt);updateCams(dt);updateSegDoor(dt);updateHomeEnding(dt);updateLockBtn();
   if(!MX.lock)updateArrow(dt);
   $$('arrow').hidden=!arrowTarget()||MX.lock;}
 // trava o olhar durante cenas
