@@ -2489,7 +2489,7 @@ function mechStart(){bLight.style.display='none';if(window.__clover)window.__clo
 
 
 /* ---------------- portas trancadas, chaves, gravações ---------------- */
-const LOCKS=[];{const sd=window.__segDoor;if(sd){sd.locked='chaveseg';LOCKS.push({d:sd,box:[13.1,17,-6,3,F2-.5,F2+3],key:'chaveseg'});}}
+const LOCKS=[];
 function inLocked(p){for(const L of LOCKS){if(!L.d.locked)continue;const [a,b,c,e,y0,y1]=L.box;if(p.x>a&&p.x<b&&p.z>c&&p.z<e&&p.y>y0&&p.y<y1)return true;}return false;}
 {const d3=doors.find(d=>d.label==='sala'&&Math.abs(d.center.x-3)<.3);if(d3){d3.locked='chave3';LOCKS.push({d:d3,box:[-3,9,6.6,21.7,F1-.5,F1+2],key:'chave3'});}
  const aud=doors.filter(d=>Math.abs(d.center.y-F2)<.2&&Math.abs(d.center.z-3)<.3);aud.forEach(d=>{d.locked='chaveaud';});if(aud.length)LOCKS.push({d:aud[0],box:[-12,17,3.1,22,F2-.5,F2+3],key:'chaveaud'});}
@@ -2515,7 +2515,7 @@ function playRecording(i){const [who,txt]=GRAV[i%GRAV.length];$$('subW').textCon
   else if(ac){const t=ac.currentTime;const s=ac.createBufferSource();s.buffer=noiseBuf;const f=ac.createBiquadFilter();f.type='bandpass';f.frequency.value=1800;const g=ac.createGain();g.gain.setValueAtTime(.06,t);g.gain.setValueAtTime(.06,t+.4);g.gain.exponentialRampToValueAtTime(.0001,t+.7);s.connect(f).connect(g).connect(master);s.start(t,Math.random(),.8);}}
 function scatterStory(){const ok=p=>p.z<21.5&&!inLocked(p)&&!(p.x>9&&p.x<21&&p.z>14);
   for(let i=0;i<GRAV.length;i++){const p=randomNode(ok);if(p)spawnItem('gravacao',p,{onTake:()=>{playRecording(gravN++);return true;}});}
-  const k3=randomNode(ok),ka=randomNode(ok);if(k3)spawnItem('chave3',k3);if(ka)spawnItem('chaveaud',ka);{const kc=randomNode(ok);if(kc)spawnItem('chaveseg',kc);}
+  const k3=randomNode(ok),ka=randomNode(ok);if(k3)spawnItem('chave3',k3);if(ka)spawnItem('chaveaud',ka);
   // a chave do portão fica dentro de uma das salas trancadas
   const L=LOCKS[(Math.random()*LOCKS.length)|0];if(L){const [a,b,c,e,y0,y1]=L.box;const p=randomNode(p=>p.x>a+.5&&p.x<b-.5&&p.z>c+.5&&p.z<e-.5&&p.y>y0&&p.y<y1);if(p)spawnItem('chaveportao',p);}}
 function updateStory(dt){if(subT>0){subT-=dt;if(subT<=0)$$('sub').hidden=true;}
@@ -2667,7 +2667,14 @@ function whisper(){if(!ac)return;const t=ac.currentTime;const pan=ac.createStere
   for(let i=0;i<5;i++){const s=ac.createBufferSource();s.buffer=noiseBuf;const bp=ac.createBiquadFilter();bp.type='bandpass';bp.frequency.value=1800+Math.random()*1800;bp.Q.value=6;const sg=ac.createGain();sg.gain.setValueAtTime(.0001,t+i*.35);sg.gain.exponentialRampToValueAtTime(.8,t+i*.35+.08);sg.gain.exponentialRampToValueAtTime(.0001,t+i*.35+.3);s.connect(bp).connect(sg).connect(g);s.start(t+i*.35,Math.random(),.35);}}
 function behindWhistle(){if(!ac)return;const t=ac.currentTime;const pan=ac.createStereoPanner?ac.createStereoPanner():null;const g=ac.createGain();g.gain.value=.9;if(pan){pan.pan.value=Math.random()<.5?-.8:.8;g.connect(pan).connect(master);}else g.connect(master);
   const o=ac.createOscillator();o.frequency.value=2950;const og=ac.createGain();og.gain.setValueAtTime(0,t);og.gain.linearRampToValueAtTime(.18,t+.02);og.gain.setValueAtTime(.18,t+.5);og.gain.linearRampToValueAtTime(0,t+.55);o.connect(og).connect(g);o.start(t);o.stop(t+.6);}
-function doScare(){const opts=['ghost','slam','face','whistle','dark','locker'];let k;do{k=opts[(Math.random()*opts.length)|0];}while(k===SC.last);SC.last=k;
+function doScare(){const opts=['ghost','slam','face','whistle','dark','locker','strobe','run','hands','laugh','bell','behind','face2'];let k;do{k=opts[(Math.random()*opts.length)|0];}while(k===SC.last);SC.last=k;
+  if(k==='strobe'){SC.strobe=2.4;SC.sPos=null;buzzOn();return;}
+  if(k==='run'){runGhost();return;}
+  if(k==='hands'){hands();return;}
+  if(k==='laugh'){laugh();return;}
+  if(k==='bell'){schoolBell();return;}
+  if(k==='behind'){SC.behind={t:0,y0:P.yaw};breathBehind();return;}
+  if(k==='face2'){faceFlash(2);return;}
   const me=new THREE.Vector3(P.pos.x,P.y,P.pos.z);
   if(k==='face'){const el=$$('scareImg');el.classList.add('on');scream(1.3,.9,1.25);sting(1.1);setTimeout(()=>el.classList.remove('on'),300);return;}
   if(k==='whistle'){behindWhistle();setTimeout(whisper,900);return;}
@@ -2679,12 +2686,49 @@ function doScare(){const opts=['ghost','slam','face','whistle','dark','locker'];
   for(let d=8.5;d>=4.5;d-=.5){const p=me.clone().addScaledVector(dir,d);const n=nearestNode(p,2);if(n<0)continue;const q=new THREE.Vector3(NAV.x[n],NAV.y[n],NAV.z[n]);if(Math.abs(q.y-me.y)<.6&&lineOfSight(new THREE.Vector3(me.x,me.y+1.5,me.z),new THREE.Vector3(q.x,q.y+1.5,q.z))){spot=q;break;}}
   if(!spot){scream(.7,1.2,.8);return;}
   GHOST.position.copy(spot);GHOST.rotation.y=Math.atan2(me.x-spot.x,me.z-spot.z);GHOST.visible=true;SC.ghost=1.1;sting(1);}
-function updateScares(dt){if(SC.ghost>0){SC.ghost-=dt;// pisca e some
+
+/* sustos extras */
+document.body.insertAdjacentHTML('beforeend','<div id="scareImg2"></div><div id="handFx"></div>');
+document.head.insertAdjacentHTML('beforeend','<style>#scareImg2{position:fixed;inset:0;z-index:9;pointer-events:none;opacity:0;background:#000 center 40%/cover no-repeat;filter:contrast(1.8) saturate(.4) brightness(.8) sepia(.6) hue-rotate(-35deg)}#scareImg2.on{opacity:1;animation:scz .35s linear}#handFx{position:fixed;inset:0;z-index:8;pointer-events:none}.hnd{position:absolute;width:150px;height:190px;opacity:0;transition:opacity 2.5s ease-in;filter:blur(.4px)}</style>');
+try{$$('scareImg2').style.backgroundImage='url('+VIL.FACE+')';}catch(_){}
+function faceFlash(which){const el=$$(which===2?'scareImg2':'scareImg');el.classList.add('on');scream(1.4,.9,which===2?.9:1.25);sting(1.2);KSshake();setTimeout(()=>el.classList.remove('on'),which===2?380:300);}
+function KSshake(){const c=renderer.domElement;c.style.transform='translate(6px,-4px)';setTimeout(()=>c.style.transform='translate(-5px,3px)',50);setTimeout(()=>c.style.transform='',110);}
+function handSVG(){return '<svg viewBox="0 0 100 130"><path d="M30 128 C18 100 14 80 16 62 L10 30 Q9 22 15 22 Q20 22 22 30 L28 55 L27 14 Q27 6 33 6 Q39 6 39 14 L41 50 L44 8 Q45 1 51 2 Q57 3 56 10 L54 52 L60 16 Q62 9 68 11 Q73 13 71 20 L65 60 L76 42 Q81 35 86 39 Q90 43 86 50 L70 82 C66 100 60 116 56 128 Z" fill="rgba(120,0,0,.88)"/></svg>';}
+function hands(){const box=$$('handFx');for(let i=0;i<3;i++){setTimeout(()=>{const d=document.createElement('div');d.className='hnd';d.innerHTML=handSVG();d.style.left=(5+Math.random()*75)+'%';d.style.top=(5+Math.random()*55)+'%';d.style.transform='rotate('+(Math.random()*60-30)+'deg)';d.style.opacity=1;box.appendChild(d);
+    thud(1.1);if(ac){const t=ac.currentTime;const s=ac.createBufferSource();s.buffer=SFX.white||noiseBuf;const bp=ac.createBiquadFilter();bp.type='bandpass';bp.frequency.value=1200;const g=ac.createGain();g.gain.setValueAtTime(.9,t);g.gain.exponentialRampToValueAtTime(.0001,t+.15);s.connect(bp).connect(g);out(g,.6);s.start(t,Math.random(),.2);}
+    setTimeout(()=>{d.style.opacity=0;setTimeout(()=>d.remove(),2600);},900);},i*380);}}
+function runGhost(){camera.getWorldDirection(fwd);const f=new THREE.Vector3(fwd.x,0,fwd.z).normalize(),r=new THREE.Vector3(-f.z,0,f.x);const me=new THREE.Vector3(P.pos.x,P.y,P.pos.z);
+  const c=me.clone().addScaledVector(f,6);const a=c.clone().addScaledVector(r,-3.5),b=c.clone().addScaledVector(r,3.5);
+  if(!lineOfSight(new THREE.Vector3(me.x,me.y+1.5,me.z),new THREE.Vector3(c.x,c.y+1.5,c.z))){laugh();return;}
+  SC.run={a,b,t:0};if(ac){const t=ac.currentTime;const s=ac.createBufferSource();s.buffer=noiseBuf;const bp=ac.createBiquadFilter();bp.type='bandpass';bp.frequency.setValueAtTime(300,t);bp.frequency.exponentialRampToValueAtTime(1500,t+.5);const g=ac.createGain();g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(1,t+.25);g.gain.exponentialRampToValueAtTime(.0001,t+.6);s.connect(bp).connect(g);out(g,.8);s.start(t,Math.random(),.7);}
+  for(let i=0;i<4;i++)setTimeout(()=>heavyStep(P.pos.x+r.x*2,P.pos.z+r.z*2,P.y,.6,true),i*130);}
+function laugh(){if(!ac)return;const t=ac.currentTime;const pan=ac.createStereoPanner?ac.createStereoPanner():null;const bus=ac.createGain();bus.gain.value=.55;if(pan){pan.pan.value=Math.random()<.5?-.9:.9;bus.connect(pan).connect(master);}else bus.connect(master);if(SFX.rev){const r=ac.createGain();r.gain.value=1.4;bus.connect(r).connect(SFX.rev);}
+  for(let i=0;i<6;i++){const st=t+i*.2;const o=ac.createOscillator();o.type='sawtooth';o.frequency.setValueAtTime(190-i*9,st);o.frequency.exponentialRampToValueAtTime(140-i*9,st+.16);
+    const f1=ac.createBiquadFilter();f1.type='bandpass';f1.frequency.value=700;f1.Q.value=5;const f2=ac.createBiquadFilter();f2.type='bandpass';f2.frequency.value=1150;f2.Q.value=6;const g=ac.createGain();g.gain.setValueAtTime(.0001,st);g.gain.exponentialRampToValueAtTime(.9,st+.03);g.gain.exponentialRampToValueAtTime(.0001,st+.17);
+    o.connect(f1).connect(g);o.connect(f2).connect(g);g.connect(bus);o.start(st);o.stop(st+.2);}}
+function schoolBell(){if(!ac)return;const t=ac.currentTime;const o=ac.createOscillator();o.type='square';o.frequency.value=880;const am=ac.createOscillator();am.frequency.value=22;const amg=ac.createGain();amg.gain.value=.5;const g=ac.createGain();g.gain.value=.0001;am.connect(amg).connect(g.gain);
+  const env=ac.createGain();env.gain.setValueAtTime(.0001,t);env.gain.exponentialRampToValueAtTime(.12,t+.05);env.gain.setValueAtTime(.12,t+2.6);env.gain.exponentialRampToValueAtTime(.0001,t+3);const bp=ac.createBiquadFilter();bp.type='bandpass';bp.frequency.value=1700;bp.Q.value=1.2;
+  o.connect(g).connect(bp).connect(env);out(env,1.5);o.start(t);o.stop(t+3.1);am.start(t);am.stop(t+3.1);hint('O sinal da escola tocou… à meia-noite.',3);}
+function breathBehind(){if(!ac)return;const t=ac.currentTime;for(let i=0;i<3;i++){const st=t+i*1.3;const s=ac.createBufferSource();s.buffer=noiseBuf;const bp=ac.createBiquadFilter();bp.type='bandpass';bp.frequency.value=600;bp.Q.value=1.2;const g=ac.createGain();g.gain.setValueAtTime(.0001,st);g.gain.exponentialRampToValueAtTime(.9,st+.45);g.gain.exponentialRampToValueAtTime(.0001,st+1.1);s.connect(bp).connect(g).connect(master);s.start(st,Math.random()*2,1.2);}}
+let buzzG=null;function buzzOn(){if(!ac)return;const t=ac.currentTime;const o=ac.createOscillator();o.type='sawtooth';o.frequency.value=60;const g=ac.createGain();g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.12,t+.1);g.gain.setValueAtTime(.12,t+2.2);g.gain.exponentialRampToValueAtTime(.0001,t+2.5);const hp=ac.createBiquadFilter();hp.type='highpass';hp.frequency.value=200;o.connect(hp).connect(g).connect(master);o.start(t);o.stop(t+2.6);}
+function updateScares(dt){
+  // lanterna piscando como estrobo, e entre as piscadas ele aparece mais perto
+  if(SC.strobe>0){SC.strobe-=dt;const on=Math.sin(SC.strobe*38)>.1;if(!on){P.light=false;flash.visible=false;if(TORCH)TORCH.userData.lensM.emissiveIntensity=0;}
+    if(!SC.sPos){camera.getWorldDirection(fwd);const d=new THREE.Vector3(fwd.x,0,fwd.z).normalize();SC.sDir=d;SC.sPos=1;SC.sd=7;}
+    SC.sd=Math.max(1.4,SC.sd-dt*3.2);const me=new THREE.Vector3(P.pos.x,P.y,P.pos.z);const gp=me.clone().addScaledVector(SC.sDir,SC.sd);
+    if(lineOfSight(new THREE.Vector3(me.x,me.y+1.5,me.z),new THREE.Vector3(gp.x,gp.y+1.5,gp.z))){GHOST.position.copy(gp);GHOST.rotation.y=Math.atan2(me.x-gp.x,me.z-gp.z);GHOST.visible=on;}
+    if(SC.strobe<=0){GHOST.visible=false;if(SC.sd<2){sting(1.2);faceFlash(1);}}}
+  // vulto correndo de um lado pro outro na sua frente
+  if(SC.run){const r=SC.run;r.t+=dt;const u=r.t/0.55;if(u>=1){GHOST.visible=false;SC.run=null;}else{GHOST.visible=true;GHOST.position.copy(r.a).lerp(r.b,u);GHOST.rotation.y=Math.atan2(r.b.x-r.a.x,r.b.z-r.a.z);}}
+  // respiração atrás: se você virar, ele está lá
+  if(SC.behind){const b=SC.behind;b.t+=dt;let dy=Math.abs(((P.yaw-b.y0+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI);
+    if(dy>2.1){SC.behind=null;faceFlash(2);}else if(b.t>5)SC.behind=null;}
+  if(SC.ghost>0){SC.ghost-=dt;// pisca e some
     GHOST.visible=SC.ghost>.25||(SC.ghost*20|0)%2===0;if(SC.ghost<=0)GHOST.visible=false;}
   if(SC.dark>0){SC.dark-=dt;P.light=false;flash.visible=false;if(TORCH)TORCH.userData.lensM.emissiveIntensity=0;}
   if(MX.phase!=='fuga'||MX.lock||MX.dead||MX.won||P.locker)return;
   const chase=PROF.state==='chase'||PROF.state==='alert';const pd=PROF.ready?PROF.pos.distanceTo(new THREE.Vector3(P.pos.x,P.y,P.pos.z)):99;
-  SC.t-=dt;if(SC.t<=0){if(chase||pd<10){SC.t=8;return;}doScare();const m={facil:1.3,normal:1,dificil:.85,pesadelo:.7}[window.DIFF_ID]||1;SC.t=(45+Math.random()*50)*m;}}
+  SC.t-=dt;if(SC.t<=0){if(chase||pd<10){SC.t=8;return;}doScare();const m={facil:1.3,normal:1,dificil:.85,pesadelo:.7}[window.DIFF_ID]||1;SC.t=(28+Math.random()*34)*m;}}
 
 let pStepAcc=0,gStepAcc=0;
 function heavyStep(x,z,y,vol,low){if(!ac)return;const d=Math.hypot(x-P.pos.x,z-P.pos.z)+Math.abs(y-P.y)*3;if(d>32)return;const a=vol*Math.pow(1-d/32,2);if(a<.01)return;const t=ac.currentTime;
