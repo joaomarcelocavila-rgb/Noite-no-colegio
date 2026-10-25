@@ -2715,7 +2715,7 @@ function updateProfScript(dt){if(PROF.state!=='script')return;const v=PROF.v;pPl
     setObjective('Fuja do colégio: ache a chave do portão',null);hint('Ele foi embora… por enquanto. Saia do armário e fuja do colégio.',4);}}
 let hbt2=0;function heartbeatTick(dt){hbt2-=dt;if(hbt2<=0){hbt2=.55;heartbeat(.5);}}
 window.__mxLock=()=>MX.lock&&!MX.lookOK;
-{const lv=document.getElementById('lockerView');if(lv&&lv.parentElement!==document.body){document.body.appendChild(lv);lv.style.zIndex=5;}}
+{const lv=document.getElementById('lockerView');if(lv)lv.style.display='none';}
 setTimeout(function freeB64(){if(!(PROF.ready&&GUARD.ready&&RIT.victim)){setTimeout(freeB64,3000);return;}document.querySelectorAll('script[type="text/plain"]').forEach(e=>{e.textContent='';});},12000);
 renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();document.body.insertAdjacentHTML('beforeend','<div id="glLost" style="position:fixed;inset:0;z-index:99;background:#000;color:#f2ead6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:24px;font:600 16px var(--f-body)"><b style="font:400 30px var(--f-display);color:#f2c230">O jogo travou</b>O celular ficou sem memória de vídeo.<button onclick="location.reload()" style="font:700 16px var(--f-body);padding:12px 22px;border-radius:999px;border:0;background:#f2c230;color:#14100a">Recarregar</button></div>');},false);
 window.__MX={story:()=>scatterStory(),note:i=>readNote(i),homeEnd:()=>{MX.won=true;startHomeEnding();},lockTest:(i)=>{const L=lockers[i];P.locker=L;P.pos.set(L.inside.x,0,L.inside.z);P.y=L.y0;P.yaw=Math.atan2(-L.fwd.x,-L.fwd.z);P.pitch=-.05;P.hidden=true;$$('lockerView').hidden=false;$$('lockerView').style.opacity=1;PROF.active=true;PROF.root.visible=true;PROF.state='chase';PROF.pos.copy(L.front).addScaledVector(L.fwd,4);PROF.sawLocker=L;PROF.lw=0;PROF.lwAt=false;PROF.lwDone=false;PROF.lwPath=0;return L.label;},sfx:()=>{scream(1,1,1);sting(1);heavyStep(P.pos.x+3,P.pos.z,P.y,1,true);growl(P.pos.x+2,P.pos.z);for(let i=0;i<8;i++)ambientEvent();MUS.on||musicStart();lowPiano();return "ok"},kill:w=>killScene(w),scare:(k)=>{SC.last="";const o=Math.random;if(k){Math.random=()=>({ghost:.05,face:.4,slam:.2})[k];}doScare();Math.random=o;return JSON.stringify({v:GHOST.visible,p:GHOST.position.toArray()});},hold:()=>{SC.ghost=999;},step:(n)=>{for(let i=0;i<n;i++)mechUpdate(.05);},MX,PROF,GUARD,NAV,onBagTaken,startBathCut,takeLantern,startRitual,worldItems,addItem};
@@ -2749,7 +2749,7 @@ function startEat(i){const it=MX.inv[i];if(!it)return;setHeld(it.id);HANIM={kind
 function startReload(){if(HANIM)return;if(!MX.hasLight){hint('Você ainda não tem lanterna.',2);return;}if(!hasItem('pilha')){hint('Você não tem pilha.',1.8);return;}
   const li=MX.inv.findIndex(x=>x&&x.id==='lanterna');MX.sel=li;MX.torchOn=false;renderInv();setHeld('lanterna');
   const pm=makeItemMesh('pilha').children[0];pm.material=pm.material.clone();pm.material.emissiveIntensity=.1;pm.rotation.set(Math.PI/2,0,0);HELD.add(pm);HANIM={kind:'bat',t:0,pm,snd:0};}
-function updateHeld(dt){const show=!!heldItem&&!FPH.visible&&!(MX.cutOn&&!RC)&&!MX.dead;HELD.visible=show;
+function updateHeld(dt){const show=!!heldItem&&!FPH.visible&&!P.locker&&!(MX.cutOn&&!RC)&&!MX.dead;HELD.visible=show;
   // balanço ao andar
   const sp=Math.min(1,P.speed/3),bob=tAcc*P.speed*2.6;HELD.position.set(.22+Math.sin(bob*.5)*.012*sp,-.24-Math.abs(Math.sin(bob*.5))*.012*sp,-.5);ARM.position.set(0,0,0);ARM.rotation.set(-.08,.18,.08);
   if(STAB>0){STAB+=dt;const k=Math.sin(Math.min(1,STAB/.35)*Math.PI);ARM.position.set(-.06*k,.04*k,-.22*k);ARM.rotation.set(-.08-.5*k,.18,.08);if(STAB>.35)STAB=0;}
@@ -3052,6 +3052,17 @@ function updateHomeEnding(dt){if(!HE)return;HE.t+=dt;const t=HE.t;P.light=false;
   if(t>7.6&&!HE.w4){HE.w4=1;window.__apito(1.2,.55);sting(1.3);}
   if(t>8.6&&!HE.end){HE.end=1;const f=$$('fade');f.style.transition='none';f.style.opacity=1;boom();camera.fov=SET.fov;camera.updateProjectionMatrix();
     setTimeout(()=>endScreen(true,'Você fugiu do colégio… mas o apito te seguiu até em casa. Ele ainda precisa de mais um nome na chamada.'),1200);}}
+
+/* ---------------- dentro do armário (estilo Doors): portas entreabertas, dá pra mexer a cabeça e espiar pela fresta ---------------- */
+function updateLockerView(dt){const L=P.locker;if(!L||LA||MX.dead||KS)return;
+  const base=Math.atan2(-L.fwd.x,-L.fwd.z);let d=((P.yaw-base+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI;
+  d=Math.max(-.6,Math.min(.6,d));P.yaw=base+d;P.pitch=Math.max(-.38,Math.min(.32,P.pitch));
+  const right=new THREE.Vector3(L.fwd.z,0,-L.fwd.x);const breathe=Math.sin(tAcc*1.7)*.006;
+  // a cabeça vai pro lado contrário de onde você olha, como espiar por uma fresta
+  const c=new THREE.Vector3(L.g.position.x,L.y0+1.6+breathe,L.g.position.z).addScaledVector(L.fwd,.1).addScaledVector(right,d*.2);
+  camera.position.copy(c);camera.rotation.set(P.pitch,P.yaw,0);
+  const gap=.045+Math.sin(tAcc*.9)*.006;L.dl.rotation.y=-gap;L.dr.rotation.y=gap;
+  P.light=false;flash.visible=false;}
 /* ---------------- loop das mecânicas ---------------- */
 let mstarted=false;
 function mechUpdate(dt){if(!started||CS.active)return;if(paused){return;}if(!mstarted){mstarted=true;mechStart();}
@@ -3065,9 +3076,8 @@ function mechUpdate(dt){if(!started||CS.active)return;if(paused){return;}if(!mst
 
   // banheiro
   if(MX.phase==='banheiro'&&!BC&&P.y<.5&&Math.hypot(P.pos.x-2.3,P.pos.z-4.25)<1.4)startBathCut();
-  {const cur=P.locker;for(const L of lockers){const hide=L===cur&&!LA;if(L.dl.visible===hide){L.dl.visible=!hide;L.dr.visible=!hide;}}}
   updateHeld(dt);updateBathCut(dt);if(!GUARD.dead)updateGuard(dt);else if(GUARD.mixer)GUARD.mixer.update(0);
-  updateRitual(dt);updateProfScript(dt);updateStory(dt);if(PROF.state!=='ritual'&&PROF.state!=='script')updateProf(dt);else if(PROF.ready&&PROF.state==='ritual'){PROF.v.mixer.update(dt);PROF.root.position.copy(PROF.pos);PROF.root.rotation.y=PROF.yaw;PROF.v.follow();}updateJumpscare(dt);updateScares(dt);updateScares2(dt);updateSoundscape(dt);updateCams(dt);updateSegDoor(dt);updateHomeEnding(dt);updateLockBtn();
+  updateRitual(dt);updateProfScript(dt);updateStory(dt);if(PROF.state!=='ritual'&&PROF.state!=='script')updateProf(dt);else if(PROF.ready&&PROF.state==='ritual'){PROF.v.mixer.update(dt);PROF.root.position.copy(PROF.pos);PROF.root.rotation.y=PROF.yaw;PROF.v.follow();}updateJumpscare(dt);updateScares(dt);updateScares2(dt);updateSoundscape(dt);updateCams(dt);updateSegDoor(dt);updateHomeEnding(dt);updateLockerView(dt);updateLockBtn();
   if(!MX.lock)updateArrow(dt);
   $$('arrow').hidden=!arrowTarget()||MX.lock;}
 // trava o olhar durante cenas
