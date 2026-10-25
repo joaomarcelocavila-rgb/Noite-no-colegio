@@ -3082,7 +3082,8 @@ function frame(now){
     updateLightPool(dt,camera);renderer.render(scene,camera);requestAnimationFrame(frame);return;}
   if(window.__pharm)window.__pharm.visible=Math.sin(tAcc*2.2)>-.3;
   {const hv=(started&&!CS.active)?'':'hidden';if(hudEl.style.visibility!==hv)hudEl.style.visibility=hv;}
-  if(CS.active){updateCutscene(dt);if(hintT>0){hintT-=dt;if(hintT<=0)hintEl.classList.remove('on');}updateLightPool(dt,camera);renderer.render(scene,camera);requestAnimationFrame(frame);return;}
+  if(!CS.active&&dotEl.style.visibility==='hidden')dotEl.style.visibility='';
+  if(CS.active){FPH.visible=false;if(typeof HELD!=='undefined')HELD.visible=false;dotEl.style.visibility='hidden';updateCutscene(dt);if(hintT>0){hintT-=dt;if(hintT<=0)hintEl.classList.remove('on');}updateLightPool(dt,camera);renderer.render(scene,camera);requestAnimationFrame(frame);return;}
   let f=0,s=0;
   if(started){if(keys.KeyW||keys.ArrowUp)f+=1;if(keys.KeyS||keys.ArrowDown)f-=1;if(keys.KeyD||keys.ArrowRight)s+=1;if(keys.KeyA||keys.ArrowLeft)s-=1;if(joyId!==null){f-=jv.y;s+=jv.x;}}
   const mag=Math.min(1,Math.hypot(f,s));
