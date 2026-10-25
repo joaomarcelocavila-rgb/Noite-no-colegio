@@ -1,7 +1,7 @@
 <meta charset="utf-8">
 <title>Noite no Colégio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Archivo+Narrow:wght@400;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Archivo+Narrow:wght@400;600&family=Caveat:wght@600&family=Playfair+Display:wght@700;900&family=Old+Standard+TT:ital,wght@0,400;0,700;1,400&display=swap">
 <style>
 /* Layout: tela cheia 3D, HUD mínimo nos cantos, tela de início como uma folha de caderno */
 :root{
@@ -2178,6 +2178,10 @@ const itemLook={sanduiche:[0xe8c890,'box',[.22,.08,.16]],suco:[0x3aa0e0,'box',[.
 function makeItemMesh(id){const [col,kind,s]=itemLook[id];const m=new THREE.MeshStandardMaterial({color:col,roughness:.5,metalness:kind==='gun'?.6:.1,emissive:col,emissiveIntensity:.25});let o;
   if(kind==='box')o=new THREE.Mesh(new THREE.BoxGeometry(...s),m);else if(kind==='cyl'){o=new THREE.Mesh(new THREE.CylinderGeometry(s[0],s[0],s[1],10),m);o.rotation.z=Math.PI/2;}
   else if(kind==='gun'){o=new THREE.Group();const a=new THREE.Mesh(new THREE.BoxGeometry(.2,.05,.04),m);a.position.x=.03;o.add(a);const b=new THREE.Mesh(new THREE.BoxGeometry(.05,.11,.035),m);b.position.set(-.05,-.06,0);b.rotation.z=-.2;o.add(b);}
+  else if(kind==='cassette'){o=new THREE.Group();const b=new THREE.Mesh(new THREE.BoxGeometry(.16,.1,.025),new THREE.MeshStandardMaterial({color:0x141414,roughness:.4}));o.add(b);
+    const lb=new THREE.Mesh(new THREE.PlaneGeometry(.13,.045),new THREE.MeshStandardMaterial({color:0xe8dcc0,emissive:0x2a2418,roughness:.8}));lb.position.set(0,.012,.0126);o.add(lb);
+    const win=new THREE.Mesh(new THREE.PlaneGeometry(.07,.022),new THREE.MeshStandardMaterial({color:0x3a2a20,roughness:.2}));win.position.set(0,.012,.0128);o.add(win);
+    [-.025,.025].forEach(x=>{const r=new THREE.Mesh(new THREE.CircleGeometry(.009,10),new THREE.MeshStandardMaterial({color:0xf0f0f0}));r.position.set(x,.012,.013);o.add(r);});}
   else if(kind==='knife'){o=new THREE.Group();const bl=new THREE.Mesh(new THREE.BoxGeometry(.012,.035,.17),new THREE.MeshStandardMaterial({color:0xd8dce2,metalness:.9,roughness:.2,emissive:0x333333}));bl.position.z=-.1;o.add(bl);const hd=new THREE.Mesh(new THREE.BoxGeometry(.022,.03,.1),new THREE.MeshStandardMaterial({color:0x2a1a10,roughness:.7,emissive:0x110a05}));hd.position.z=.035;o.add(hd);}
   else{o=new THREE.Group();for(let i=0;i<4;i++){const l=new THREE.Mesh(new THREE.SphereGeometry(.05,8,6),m);l.scale.set(1,.3,1);l.position.set(Math.cos(i*Math.PI/2)*.055,0,Math.sin(i*Math.PI/2)*.055);o.add(l);}}
   const g=new THREE.Group();g.add(o);
@@ -2520,7 +2524,7 @@ function inLocked(p){for(const L of LOCKS){if(!L.d.locked)continue;const [a,b,c,
 {const d3=doors.find(d=>d.label==='sala'&&Math.abs(d.center.x-3)<.3);if(d3){d3.locked='chave3';LOCKS.push({d:d3,box:[-3,9,6.6,21.7,F1-.5,F1+2],key:'chave3'});}
  const aud=doors.filter(d=>Math.abs(d.center.y-F2)<.2&&Math.abs(d.center.z-3)<.3);aud.forEach(d=>{d.locked='chaveaud';});if(aud.length)LOCKS.push({d:aud[0],box:[-12,17,3.1,22,F2-.5,F2+3],key:'chaveaud'});}
 Object.assign(ITEMS,{chaveseg:{n:'Chave da segurança',ic:'🔐',key:1},chave3:{n:'Chave do 3º ano',ic:'🗝️',key:1},chaveaud:{n:'Chave do auditório',ic:'🔑',key:1},chaveportao:{n:'Chave do portão',ic:'🗝️',key:1},gravacao:{n:'Gravador',ic:'📼'}});
-Object.assign(itemLook,{chaveseg:[0xc0c4cc,'box',[.15,.02,.05]],chave3:[0xd8b040,'box',[.14,.02,.05]],chaveaud:[0xd8b040,'box',[.14,.02,.05]],chaveportao:[0xffd860,'box',[.18,.025,.06]],gravacao:[0x202020,'box',[.16,.1,.05]]});
+Object.assign(itemLook,{chaveseg:[0xc0c4cc,'box',[.15,.02,.05]],chave3:[0xd8b040,'box',[.14,.02,.05]],chaveaud:[0xd8b040,'box',[.14,.02,.05]],chaveportao:[0xffd860,'box',[.18,.025,.06]],gravacao:[0x151515,'cassette']});
 const hasItem=id=>MX.inv.some(x=>x&&x.id===id);
 function rattle(){if(!ac)return;const t=ac.currentTime;for(let i=0;i<3;i++){const s=ac.createBufferSource();s.buffer=noiseBuf;const f=ac.createBiquadFilter();f.type='bandpass';f.frequency.value=2200;f.Q.value=2;const g=ac.createGain();g.gain.setValueAtTime(.35,t+i*.09);g.gain.exponentialRampToValueAtTime(.0001,t+i*.09+.07);s.connect(f).connect(g).connect(master);s.start(t+i*.09,Math.random(),.08);}}
 window.__tryUnlock=d=>{const k=d.locked;if(hasItem(k)){[d,d.partner].concat(doors.filter(o=>o.locked===k)).forEach(o=>{if(o)o.locked=null;});{const ki=MX.inv.findIndex(x=>x&&x.id===k);if(ki>=0){MX.inv[ki]=null;if(MX.sel===ki)MX.sel=-1;renderInv();}}hint('Destrancou com a '+ITEMS[k].n+'.',2);clickSound();return true;}
@@ -2558,8 +2562,59 @@ const NOTES=[
 Object.assign(ITEMS,{nota:{n:'Bilhete',ic:'📄'},fita:{n:'Fitas',ic:'📼'},apito:{n:'Apito velho',ic:'🎺'}});Object.assign(itemLook,{apito:[0xc8c8d0,'box',[.09,.045,.05]]});Object.assign(itemLook,{nota:[0xe8e0c8,'box',[.18,.005,.24]]});
 document.body.insertAdjacentHTML('beforeend','<div id="note" hidden><div class="pp"><b id="noteT"></b><pre id="noteB"></pre><button id="noteX" type="button">Fechar</button></div></div>');
 document.head.insertAdjacentHTML('beforeend','<style>#note{position:fixed;inset:0;z-index:25;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:20px}#note .pp{width:min(440px,100%);background:#e8e0c8;color:#2a1a10;border-radius:4px;padding:22px 22px 16px;box-shadow:0 20px 60px #000;transform:rotate(-1.2deg);background-image:repeating-linear-gradient(transparent 0 27px,rgba(60,80,140,.18) 27px 28px)}#note b{display:block;font:700 13px var(--f-body);letter-spacing:.12em;text-transform:uppercase;color:#7a1414;margin-bottom:10px}#note pre{white-space:pre-wrap;font:500 15px/1.75 "Special Elite",monospace;margin:0 0 14px}#note button{font:700 13px var(--f-body);letter-spacing:.1em;text-transform:uppercase;padding:10px 18px;border-radius:999px;border:0;background:#2a1a10;color:#e8e0c8;cursor:pointer}</style>');
-function readNote(i){const [t,b]=NOTES[i];$$('noteT').textContent=t;$$('noteB').textContent=b;$$('note').hidden=false;MX.lock=true;MX.lookOK=false;try{document.exitPointerLock&&document.exitPointerLock();}catch(_){}if(ac){const t0=ac.currentTime;const s=ac.createBufferSource();s.buffer=noiseBuf;const bp=ac.createBiquadFilter();bp.type='highpass';bp.frequency.value=1500;const g=ac.createGain();g.gain.setValueAtTime(.4,t0);g.gain.exponentialRampToValueAtTime(.0001,t0+.35);s.connect(bp).connect(g).connect(master);s.start(t0,Math.random(),.4);}}
-$$('noteX').addEventListener('click',e=>{e.stopPropagation();$$('note').hidden=true;MX.lock=false;if(!isTouch)tryLock();});
+// papéis de verdade: jornal, lista de chamada e diário. O tempo para enquanto você lê.
+document.body.insertAdjacentHTML('beforeend','<div id="paper" hidden><button id="paperX" type="button" aria-label="Fechar">✕</button><div id="paperC"></div></div>');
+document.head.insertAdjacentHTML('beforeend',`<style>
+#paper{position:fixed;inset:0;z-index:26;background:rgba(0,0,0,.78);display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto}
+#paperX{position:fixed;top:calc(14px + env(safe-area-inset-top,0px));right:calc(14px + env(safe-area-inset-right,0px));width:46px;height:46px;border-radius:50%;border:2px solid rgba(255,255,255,.6);background:rgba(0,0,0,.6);color:#fff;font:700 22px var(--f-body);cursor:pointer;z-index:2}
+#paperC{max-height:calc(100vh - 32px);overflow:auto;-webkit-overflow-scrolling:touch}
+.news{width:min(760px,96vw);background:#e9e1cc;color:#1d1a14;padding:18px 22px 22px;box-shadow:0 20px 70px #000;transform:rotate(-.6deg);background-image:radial-gradient(ellipse at 20% 10%,rgba(150,120,60,.18),transparent 60%),radial-gradient(ellipse at 90% 80%,rgba(120,90,40,.22),transparent 55%);font-family:"Old Standard TT",Georgia,serif}
+.news .mast{text-align:center;border-bottom:3px double #1d1a14;padding-bottom:6px}
+.news .mast h1{font:900 clamp(26px,5.4vw,46px) "Playfair Display",Georgia,serif;letter-spacing:.02em;margin:0}
+.news .meta{display:flex;justify-content:space-between;font-size:11px;letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid #1d1a14;padding:4px 0;margin-bottom:10px}
+.news h2{font:900 clamp(20px,3.8vw,32px)/1.08 "Playfair Display",Georgia,serif;margin:6px 0 6px;text-transform:uppercase}
+.news .sub{font-style:italic;font-size:15px;margin:0 0 10px;border-bottom:1px solid rgba(0,0,0,.3);padding-bottom:8px}
+.news .grid{display:grid;grid-template-columns:1.25fr 1fr;gap:16px}
+.news .photo{width:100%;aspect-ratio:4/3;background:#777 center/cover;filter:grayscale(1) contrast(1.4) brightness(.9);box-shadow:inset 0 0 40px rgba(0,0,0,.5)}
+.news .cap{font-size:11px;font-style:italic;margin:4px 0 10px}
+.news .cols{column-count:2;column-gap:16px;font-size:13.5px;line-height:1.45;text-align:justify}
+.news .cols p{margin:0 0 8px}.news .cols p:first-child::first-letter{font:900 34px/1 "Playfair Display";float:left;margin:2px 4px 0 0}
+.news .box{border:2px solid #1d1a14;padding:10px;text-align:center;margin-top:10px}
+.news .box b{display:block;font:900 22px "Playfair Display";letter-spacing:.08em}.news .sil{width:90px;height:110px;margin:8px auto;background:radial-gradient(circle at 50% 32%,#555 22%,transparent 23%),radial-gradient(ellipse at 50% 100%,#555 45%,transparent 46%);background-color:#bbb}
+.news .side h3{font:700 16px "Playfair Display";margin:0 0 4px;border-top:2px solid #1d1a14;padding-top:6px}.news .side p{font-size:13px;line-height:1.4;margin:0 0 8px}
+@media (max-width:620px){.news .grid{grid-template-columns:1fr}.news .cols{column-count:1}}
+.roll{width:min(520px,94vw);background:#f4f1e8;color:#1d2a4a;padding:22px 24px;box-shadow:0 20px 70px #000;transform:rotate(.8deg);font-family:"Archivo Narrow",sans-serif;background-image:repeating-linear-gradient(transparent 0 29px,rgba(40,70,140,.22) 29px 30px)}
+.roll h3{margin:0;font-size:20px;letter-spacing:.06em}.roll small{display:block;margin-bottom:12px;color:#555}
+.roll table{width:100%;border-collapse:collapse;font-size:15px}.roll td{padding:3px 4px;height:24px}.roll td.n{width:34px;color:#888}.roll .x{color:#a01010;font:600 22px Caveat,cursive}
+.roll .s{text-decoration:line-through;text-decoration-color:#b01010;text-decoration-thickness:2px}.roll .you{font:600 24px Caveat,cursive;color:#b01010}
+.diary{width:min(480px,92vw);background:#efe6d0;color:#2a1d10;padding:26px 26px 30px 54px;box-shadow:0 20px 70px #000;transform:rotate(-1.4deg);position:relative;background-image:linear-gradient(90deg,transparent 40px,rgba(190,40,40,.35) 40px 42px,transparent 42px),repeating-linear-gradient(transparent 0 31px,rgba(60,80,140,.2) 31px 32px);font:600 22px/32px Caveat,cursive}
+.diary p{margin:0 0 0}.diary .blood{position:absolute;right:30px;bottom:40px;width:70px;height:60px;background:radial-gradient(circle,rgba(120,0,0,.85) 30%,rgba(120,0,0,0) 70%);border-radius:50%}
+</style>`);
+let paperPhoto=null;
+function schoolPhoto(){if(paperPhoto)return paperPhoto;try{const cam=new THREE.PerspectiveCamera(55,4/3,.1,80);cam.position.set(15.5,1.75,31.5);cam.lookAt(14.5,4.2,20);const old=renderer.getSize(new THREE.Vector2());renderer.setSize(640,480,false);
+  const sb=scene.fog.density;scene.fog.density=.02;renderer.render(scene,cam);paperPhoto=renderer.domElement.toDataURL('image/jpeg',.8);scene.fog.density=sb;renderer.setSize(old.x,old.y,false);}catch(e){paperPhoto='';}return paperPhoto;}
+function paperHTML(i){
+ if(i===0)return `<div class="news"><div class="mast"><h1>Diário do Alvorecer</h1></div>
+  <div class="meta"><span>Recife, sábado, 1º de novembro de 2003</span><span>Ano XLII · Nº 12.847</span><span>R$ 1,00</span></div>
+  <h2>Aluno desaparece após treino noturno no Colégio RSS</h2><p class="sub">Davi, de 14 anos, estudante do 9º ano A, não voltou para casa. Professor de Educação Física foi o último a vê-lo.</p>
+  <div class="grid"><div><div class="photo" style="background-image:url(${schoolPhoto()})"></div><p class="cap">Fachada do Colégio RSS, na Estrada do Alvorecer, onde o estudante foi visto pela última vez. (Foto: Arquivo)</p>
+   <div class="cols"><p>A família do estudante Davi, 14 anos, procurou a polícia na madrugada de ontem depois que o garoto não retornou de um treino para o interclasse, realizado à noite na quadra do Colégio RSS.</p>
+   <p>Segundo colegas, o treino terminou por volta das 22h. "O professor mandou todo mundo embora, mas o Davi voltou pra pegar a mochila", contou um aluno que pediu para não ser identificado.</p>
+   <p>O professor de Educação Física responsável afirmou em depoimento que "dispensou todos os alunos às 22h" e que não viu ninguém retornar. O porteiro da noite disse ter ouvido "um apito tocando por muito tempo" depois que as luzes da quadra se apagaram.</p>
+   <p>A polícia fez buscas no prédio e não encontrou vestígios. O caso segue em aberto.</p></div></div>
+  <div class="side"><div class="box"><b>DESAPARECIDO</b><div class="sil"></div>DAVI · 14 anos · 1,60 m<br>Vestia o uniforme do colégio<br>Informações: <b style="font-size:16px;display:inline">190</b></div>
+   <h3>Professor nega envolvimento</h3><p>"Eu apitei o fim do treino como sempre faço", disse o docente, que leciona na escola desde 1998.</p>
+   <h3>Moradores relatam apito à noite</h3><p>Vizinhos da Estrada do Alvorecer dizem ouvir, em noites de outubro, um apito vindo do colégio vazio.</p></div></div></div>`;
+ if(i===1){const names=['Ana Beatriz','Bruno Henrique','Carla Souza','Davi','Eduarda Lima','Felipe Rocha','Gabriel Nunes','Heloísa Brito','Igor Santana','Júlia Prado','Kaio Mendes','Larissa Melo'];
+  let rows=names.map((n,k)=>`<tr><td class="n">${String(k+1).padStart(2,'0')}</td><td class="s">${n}</td><td class="x">✗</td></tr>`).join('');
+  rows+=`<tr><td class="n">…</td><td>…</td><td></td></tr><tr><td class="n">29</td><td class="s">Segurança (ronda noturna)</td><td class="x">✗</td></tr><tr><td class="n">30</td><td class="you">você</td><td class="x">?</td></tr>`;
+  return `<div class="roll"><h3>CHAMADA — TREINO NOTURNO</h3><small>Colégio RSS · Educação Física · Turma: 9º ano A</small><table>${rows}</table></div>`;}
+ return `<div class="diary"><p>31 de outubro</p><p>Toda vez que eu apito, alguém escuta.</p><p>O primeiro foi o Davi. Ele voltou quando eu chamei.</p><p>Agora eles todos vêm. Ficam em fila na quadra,</p><p>esperando o treino que nunca acaba.</p><p>Vinte e nove.</p><p><b>Só falta um.</b></p><div class="blood"></div></div>`;}
+function readNote(i){$$('paperC').innerHTML=paperHTML(i);$$('paper').hidden=false;paused=true;MX.lock=true;MX.lookOK=false;try{document.exitPointerLock&&document.exitPointerLock();}catch(_){}
+  if(ac){const t0=ac.currentTime;const s=ac.createBufferSource();s.buffer=noiseBuf;const bp=ac.createBiquadFilter();bp.type='highpass';bp.frequency.value=1500;const g=ac.createGain();g.gain.setValueAtTime(.4,t0);g.gain.exponentialRampToValueAtTime(.0001,t0+.35);s.connect(bp).connect(g).connect(master);s.start(t0,Math.random(),.4);}}
+function closePaper(){$$('paper').hidden=true;paused=false;MX.lock=false;if(!isTouch)tryLock();}
+$$('paperX').addEventListener('click',e=>{e.stopPropagation();closePaper();});fastTap($$('paperX'));
+addEventListener('keydown',e=>{if(!$$('paper').hidden&&(e.code==='Escape'||e.code==='KeyE')){e.preventDefault();closePaper();}});
 
 // lista das fitas que você já pegou (pode ouvir de novo, em qualquer ordem)
 document.body.insertAdjacentHTML('beforeend','<div id="tapes" hidden><div class="tb"><b>📼 Suas fitas</b><div id="tapeL"></div><button id="tapeX" type="button">Fechar</button></div></div>');
@@ -2575,8 +2630,10 @@ function trueEnding(){if(MX.won||MX.dead)return;MX.won=true;MX.lock=true;const k
     let n=0;const iv=setInterval(()=>{MX.lightK=Math.random()<.5?0:1;applyLights();if(++n>14){clearInterval(iv);}},90);},700);
   setTimeout(()=>{const f=$$('fade');f.style.background='#fff';f.style.transition='opacity 2.2s';f.style.opacity=1;},2400);
   setTimeout(()=>{const f=$$('fade');f.style.background='#000';endScreen(true,'O apito quebrou. Lá fora, na quadra, 29 vultos esperavam em fila… e um a um foram sumindo. O último olhou pra você e sorriu: era um menino do 9º ano. Era o Davi. Ele finalmente pôde ir pra casa.');$$('endT').textContent='FINAL VERDADEIRO';unlock('mochila');},5000);}
-function scatterStory(){const ok=p=>p.z<21.5&&!inLocked(p)&&!(p.x>9&&p.x<21&&p.z>14);spawnItem('gravacao',new THREE.Vector3(-.4,F1,9.6),{onTake:()=>{takeTape(10);return true;}});
-  for(let i=0;i<7;i++){const p=randomNode(ok);if(p)spawnItem('gravacao',p,{onTake:()=>{takeTape(null);return true;}});}
+function scatterStory(){const ok=p=>p.z<21.5&&!inLocked(p)&&!(p.x>9&&p.x<21&&p.z>14);{const w=spawnItem('gravacao',new THREE.Vector3(-.4,F1-.19,9.6),{onTake:()=>{takeTape(10);return true;}});w.still=true;w.g.children[1].visible=false;w.g.children[0].rotation.set(Math.PI/2,0,.7);}
+  // fitas em cima de mesas, dentro das salas (nada jogado no pátio)
+  const SPOTS=[[13.45,1.06,17.4],[14.4,1.11,5.2],[15,1.11,-1.6],[-26,F1+.79,11.2],[-14,F1+.79,11.2],[-22,F2+.96,9.6],[-19.5,F2+.96,6.2],[-16,F2+.79,15.6],[-9.5,F2+1.16,4.0],[16.2,F2+.82,-2.2]].sort(()=>Math.random()-.5).slice(0,7);
+  for(const [x,y,z] of SPOTS){const w=spawnItem('gravacao',new THREE.Vector3(x,y-.22+.03,z),{onTake:()=>{takeTape(null);return true;}});w.still=true;w.g.children[1].visible=false;w.g.children[0].rotation.set(Math.PI/2,0,Math.random()*3);w.g.children[0].position.y=0;}
   for(let i=0;i<NOTES.length;i++){const p=randomNode(ok);if(p)spawnItem('nota',p,{onTake:()=>{readNote(i);return true;}});}
   const k3=randomNode(ok),ka=randomNode(ok);if(k3)spawnItem('chave3',k3);if(ka)spawnItem('chaveaud',ka);{const kc=randomNode(ok);if(kc)spawnItem('chaveseg',kc);}
   // a chave do portão fica dentro de uma das salas trancadas
@@ -2661,7 +2718,7 @@ window.__mxLock=()=>MX.lock&&!MX.lookOK;
 {const lv=document.getElementById('lockerView');if(lv&&lv.parentElement!==document.body){document.body.appendChild(lv);lv.style.zIndex=5;}}
 setTimeout(function freeB64(){if(!(PROF.ready&&GUARD.ready&&RIT.victim)){setTimeout(freeB64,3000);return;}document.querySelectorAll('script[type="text/plain"]').forEach(e=>{e.textContent='';});},12000);
 renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();document.body.insertAdjacentHTML('beforeend','<div id="glLost" style="position:fixed;inset:0;z-index:99;background:#000;color:#f2ead6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:24px;font:600 16px var(--f-body)"><b style="font:400 30px var(--f-display);color:#f2c230">O jogo travou</b>O celular ficou sem memória de vídeo.<button onclick="location.reload()" style="font:700 16px var(--f-body);padding:12px 22px;border-radius:999px;border:0;background:#f2c230;color:#14100a">Recarregar</button></div>');},false);
-window.__MX={homeEnd:()=>{MX.won=true;startHomeEnding();},lockTest:(i)=>{const L=lockers[i];P.locker=L;P.pos.set(L.inside.x,0,L.inside.z);P.y=L.y0;P.yaw=Math.atan2(-L.fwd.x,-L.fwd.z);P.pitch=-.05;P.hidden=true;$$('lockerView').hidden=false;$$('lockerView').style.opacity=1;PROF.active=true;PROF.root.visible=true;PROF.state='chase';PROF.pos.copy(L.front).addScaledVector(L.fwd,4);PROF.sawLocker=L;PROF.lw=0;PROF.lwAt=false;PROF.lwDone=false;PROF.lwPath=0;return L.label;},sfx:()=>{scream(1,1,1);sting(1);heavyStep(P.pos.x+3,P.pos.z,P.y,1,true);growl(P.pos.x+2,P.pos.z);for(let i=0;i<8;i++)ambientEvent();MUS.on||musicStart();lowPiano();return "ok"},kill:w=>killScene(w),scare:(k)=>{SC.last="";const o=Math.random;if(k){Math.random=()=>({ghost:.05,face:.4,slam:.2})[k];}doScare();Math.random=o;return JSON.stringify({v:GHOST.visible,p:GHOST.position.toArray()});},hold:()=>{SC.ghost=999;},step:(n)=>{for(let i=0;i<n;i++)mechUpdate(.05);},MX,PROF,GUARD,NAV,onBagTaken,startBathCut,takeLantern,startRitual,worldItems,addItem};
+window.__MX={story:()=>scatterStory(),note:i=>readNote(i),homeEnd:()=>{MX.won=true;startHomeEnding();},lockTest:(i)=>{const L=lockers[i];P.locker=L;P.pos.set(L.inside.x,0,L.inside.z);P.y=L.y0;P.yaw=Math.atan2(-L.fwd.x,-L.fwd.z);P.pitch=-.05;P.hidden=true;$$('lockerView').hidden=false;$$('lockerView').style.opacity=1;PROF.active=true;PROF.root.visible=true;PROF.state='chase';PROF.pos.copy(L.front).addScaledVector(L.fwd,4);PROF.sawLocker=L;PROF.lw=0;PROF.lwAt=false;PROF.lwDone=false;PROF.lwPath=0;return L.label;},sfx:()=>{scream(1,1,1);sting(1);heavyStep(P.pos.x+3,P.pos.z,P.y,1,true);growl(P.pos.x+2,P.pos.z);for(let i=0;i<8;i++)ambientEvent();MUS.on||musicStart();lowPiano();return "ok"},kill:w=>killScene(w),scare:(k)=>{SC.last="";const o=Math.random;if(k){Math.random=()=>({ghost:.05,face:.4,slam:.2})[k];}doScare();Math.random=o;return JSON.stringify({v:GHOST.visible,p:GHOST.position.toArray()});},hold:()=>{SC.ghost=999;},step:(n)=>{for(let i=0;i<n;i++)mechUpdate(.05);},MX,PROF,GUARD,NAV,onBagTaken,startBathCut,takeLantern,startRitual,worldItems,addItem};
 
 /* ---------------- item na mão (lanterna, comida, pilha…) ---------------- */
 const HELD=new THREE.Group();camera.add(HELD);HELD.position.set(.22,-.24,-.5);HELD.scale.setScalar(.9);let heldId=null,heldItem=null,HANIM=null;
