@@ -1391,13 +1391,13 @@ const stalls=[];
 const actBtn=document.getElementById('act');let actTarget=null;
 function nearestInteract(){if(P.locker)return {kind:'locker',L:P.locker,txt:'Sair do armário'};
   let best=null,bd=1.7;const px=P.pos.x,pz=P.pos.z;
-  for(const d of doors){if(Math.abs(P.y-d.center.y)>1.2)continue;const dd=Math.hypot(px-d.center.x,pz-d.center.z);if(dd<bd){bd=dd;best={kind:'door',d,txt:d.inLock?'🔒 Trancada por dentro':d.locked?'🔒 Trancada':(d.open?'Fechar':'Abrir')};}}
+  for(const d of doors){if(Math.abs(P.y-d.center.y)>1.2)continue;const dd=Math.hypot(px-d.center.x,pz-d.center.z);if(dd<bd){bd=dd;best={kind:'door',d,txt:d.inLock?(window.__segInside&&window.__segInside()?'Abrir':'🔒 Trancada por dentro'):d.locked?'🔒 Trancada':(d.open?'Fechar':'Abrir')};}}
   for(const L of lockers){if(Math.abs(P.y-L.y0)>1.2)continue;const dd=Math.hypot(px-L.front.x,pz-L.front.z);if(dd<Math.min(bd,1.3)){bd=dd;best={kind:'locker',L,txt:'Esconder no '+L.label};}}
-  {const cn=window.__camNear&&window.__camNear();if(cn&&(!best||cn.d<bd))return cn;const ln=window.__lockNear&&window.__lockNear();if(ln)return ln;}
+  {const cn=window.__camNear&&window.__camNear();if(cn&&(!best||cn.d<bd))return cn;}
   const ic=window.__itemNear&&window.__itemNear();if(ic&&(!best||ic.d<bd+.5))best=ic;
   return best;}
 function doInteract(){const t=actTarget;if(!t)return;
-  if(t.kind==='door'){const d=t.d;if(HA)return;if(d.inLock){if(window.__segInside&&window.__segInside()){window.__segLock(false);}else{hint('Trancada por dentro.',1.5);if(window.__rattle)window.__rattle();}return;}if(d.locked&&!(window.__tryUnlock&&window.__tryUnlock(d)))return;handReach(()=>{d.open=!d.open;if(d.partner)d.partner.open=d.open;creakDoor(d.open);});}
+  if(t.kind==='door'){const d=t.d;if(HA)return;if(d.inLock){hint(window.__segInside&&window.__segInside()?'Trancada. Abra o cadeado primeiro.':'Trancada por dentro.',1.5);if(window.__rattle)window.__rattle();return;}if(d.locked&&!(window.__tryUnlock&&window.__tryUnlock(d)))return;handReach(()=>{d.open=!d.open;if(d.partner)d.partner.open=d.open;creakDoor(d.open);});}
   else if(t.kind==='locker'){if(P.locker)exitLocker();else enterLocker(t.L);}
   else if(t.kind==='item'){window.__takeItem(t);}
   else if(t.kind==='cams'){window.__openCams();}
@@ -1477,7 +1477,7 @@ document.addEventListener('mousedown',e=>{if(locked&&actTarget&&e.button===0&&st
 /* ================= zonas ================= */
 const zones0=[['Rua',-45,34,22.3,37],['Banheiro masculino',3,9,2.3,6.35],['Banheiro feminino',3,9,6.35,10.4],['Portaria',9,21,14,22.3],['Catracas',6,9,17.5,22],['Corredor',3,6,15.5,22],['Rampa de acesso',-12,3,17.5,22],['Área do piquenique',-27,-12,16,22],['Corredor das catracas',-27,-22,1,16],['Pátio descoberto',-27,-10,-16,7],['Cantina',-10,-5,-16,-8],['Refeitório',-10,7,-16,-6],['Corredor da secretaria',12,14.2,8,14],['Sala da secretaria',14.2,17,8,14],['Secretaria',12,17,2,8],['Tesouraria',12,17,-3,2],['Fardamento',7,12,-4,2],['Passagem',3,7,-6,2],['Corredorzinho',-5,17,-20,-16],['Sala dos Professores',7,17,-16,-12],['Sala de Tecnologia',7,17,-12,-4],['Área do infantil',-10,12,-34,-20],['Quadra',17,33,-34,-2],['Pátio coberto',-10,3,-6,17.5]];
 const zones1=[['Patamar',7,12,0,3],['Escadaria',-10,3,-6,3],['Sala 9º A',-27,-15,6.5,21.7],['2º ano · Médio',-15,-3,6.5,21.7],['3º ano · Médio',-3,9,6.5,21.7],['Corredor · 1º andar',-27,9,3,6.5]];
-const zones2=[['Laboratório',-27,-14.5,3,12.5],['Biblioteca',-27,-14.5,12.5,22],['Corredor · 2º andar',-14.5,-12,3,22],['Escada de incêndio',-24,-12,-1.2,3],['Palco',-10,16.5,17.5,22],['Auditório',-12,17,3,22],['Saguão · 2º andar',-12,17,-6,3]];
+const zones2=[['Sala de Segurança',13,17,-6,3],['Laboratório',-27,-14.5,3,12.5],['Biblioteca',-27,-14.5,12.5,22],['Corredor · 2º andar',-14.5,-12,3,22],['Escada de incêndio',-24,-12,-1.2,3],['Palco',-10,16.5,17.5,22],['Auditório',-12,17,3,22],['Saguão · 2º andar',-12,17,-6,3]];
 function zoneAt(x,z,y){for(const h of hideouts)if(x>h[0]&&x<h[1]&&z>h[2]&&z<h[3]&&(h[5]===undefined?y<.5:(y>h[5]-.1&&y<h[6])))return h[4];if(P.locker)return 'Armário';if(x>9&&x<12&&z>3&&z<14&&y>.2)return 'Rampa';if(x>3&&x<7&&z>-5.5&&z<2.4&&y>.2)return 'Escada';const L=y>7.6?zones2:y>3.4?zones1:zones0;for(const [n,a,b,c,d] of L)if(x>a&&x<b&&z>c&&z<d)return n;return 'Colégio';}
 const placeEl=document.getElementById('place'),hintEl=document.getElementById('hint');
 let curZone='Rua';function setZone(z){if(z===curZone)return;curZone=z;placeEl.style.opacity=0;setTimeout(()=>{placeEl.textContent=z;placeEl.style.opacity=1;},300);}
@@ -2181,7 +2181,7 @@ function makeItemMesh(id){const [col,kind,s]=itemLook[id];const m=new THREE.Mesh
   const ring=new THREE.Mesh(new THREE.RingGeometry(.16,.22,20),new THREE.MeshBasicMaterial({color:0xf2c230,transparent:true,opacity:.35,depthWrite:false}));ring.rotation.x=-Math.PI/2;ring.position.y=-.2;g.add(ring);
   return g;}
 function spawnItem(id,p,opt={}){const g=makeItemMesh(id);g.position.set(p.x,p.y+.22,p.z);scene.add(g);const w={id,g,base:p.y+.22,t:Math.random()*6,...opt};worldItems.push(w);return w;}
-function updateWorldItems(dt){for(const w of worldItems){if(w.gone)continue;w.t+=dt;w.g.children[0].rotation.y+=dt*1.5;w.g.children[0].position.y=Math.sin(w.t*2)*.04;
+function updateWorldItems(dt){for(const w of worldItems){if(w.gone)continue;w.t+=dt;if(w.still)continue;w.g.children[0].rotation.y+=dt*1.5;w.g.children[0].position.y=Math.sin(w.t*2)*.04;
   }}
 // pegar com botão: o mais perto aparece no botão de ação
 const ITN={lanterna:'lanterna',gravacao:'gravador'};
@@ -2314,7 +2314,8 @@ try{new THREE.GLTFLoader().parse(b64buf('g-glb'),'',g=>{const m=g.scene;const ro
   GUARD.flash=fl;GUARD.torch=torch;
   GUARD.mixer=new THREE.AnimationMixer(m);GUARD.acts={};g.animations.forEach(a=>GUARD.acts[a.name]=GUARD.mixer.clipAction(a));GUARD.acts.walk.play();GUARD.cur=GUARD.acts.walk;
   {GUARD.mixer.update(0);root.updateMatrixWorld(true);const hand=m.getObjectByName('Bip01_R_Hand')||m.getObjectByName('Bip01_R_Finger1');
-   if(hand){const hp=hand.getWorldPosition(new THREE.Vector3());torch.position.copy(hp);torch.position.z+=.04;torch.position.y-=.02;torch.lookAt(hp.x,hp.y-.9,hp.z+4);scene.add(torch);torch.updateMatrixWorld(true);hand.attach(torch);}
+   if(hand){const hp=hand.getWorldPosition(new THREE.Vector3());torch.position.copy(hp);torch.position.z+=.04;torch.position.y-=.02;torch.lookAt(hp.x,hp.y-.9,hp.z+4);torch.scale.setScalar(1.25);scene.add(torch);torch.updateMatrixWorld(true);hand.attach(torch);
+    root.remove(fl);root.remove(fl.target);torch.add(fl);fl.position.set(0,0,.17);torch.add(fl.target);fl.target.position.set(0,0,5);}
    else{torch.position.set(.25,1.15,.3);root.add(torch);}}
   GUARD.root=root;GUARD.model=m;scene.add(root);root.position.copy(GUARD.pos);GUARD.ready=true;},e=>console.warn('segurança',e));}catch(e){console.warn(e);}
 function gPlay(n,ts=1){const a=GUARD.acts[n];if(!a)return;a.timeScale=ts;if(GUARD.cur===a)return;a.reset().play();if(GUARD.cur)a.crossFadeFrom(GUARD.cur,.3,true);GUARD.cur=a;}
@@ -2343,7 +2344,7 @@ function killGuard(){GUARD.dead=true;if(!GUARD.ready)return;// vira corpo no ban
   for(let i=0;i<5;i++){const s=new THREE.Mesh(new THREE.CircleGeometry(rnd(.08,.2),12),pool.material);s.rotation.x=-Math.PI/2;s.position.set(rnd(4,7),.013,rnd(3,5.8));scene.add(s);}
   // lanterna dele no chão, ainda acesa
   const lt=FLOORL;lt.intensity=2.4;MX.floorLight=lt;
-  MX.lanternaItem=spawnItem('lanterna',new THREE.Vector3(5.3,-.1,5.0),{onTake:()=>{takeLantern();return true;}});MX.lanternaItem.g.children[1].visible=false;}
+  MX.lanternaItem=spawnItem('lanterna',new THREE.Vector3(5.3,-.1,5.0),{onTake:()=>{takeLantern();return true;}});MX.lanternaItem.g.children[1].visible=false;{const w=MX.lanternaItem;w.still=true;w.g.position.y=.05;const o=w.g.children[0];o.rotation.set(0,0,Math.PI/2);o.rotation.y=2.3;}}
 
 /* ---------------- dano, jumpscare, morte ---------------- */
 function hurt(n,flash=true){if(MX.dead||MX.won)return;MX.vida=Math.max(0,MX.vida-n);renderStats();if(flash){const d=$$('dmg');d.style.opacity=1;setTimeout(()=>d.style.opacity=0,350);}if(MX.vida<=0)die('fome');}
@@ -2790,7 +2791,17 @@ window.__segInside=()=>P.pos.x>13.05&&P.pos.x<17&&P.pos.z>-6&&P.pos.z<3&&Math.ab
 window.__segLock=function(on){if(!SD)return;if(on&&SD.locked){return;}SD.inLock=on;if(on){SD.open=false;}clang();hint(on?'Você trancou a porta. Ele não entra… por enquanto.':'Porta destrancada.',2);
   const b=$$('camL');if(b)b.textContent=on?'🔓 Destrancar':'🔒 Trancar porta';};
 window.__lockNear=function(){if(MX.lock||!SD||SD.locked||!window.__segInside())return null;const d=Math.hypot(P.pos.x-13.7,P.pos.z+1);if(d<1.3)return {kind:'seglock',d,txt:SD.inLock?'🔓 Destrancar porta':'🔒 Trancar porta'};return null;};
-$$('camL').addEventListener('click',e=>{e.stopPropagation();window.__segLock(!SD.inLock);});fastTap($$('camL'));
+$$('camL').addEventListener('click',e=>{e.stopPropagation();window.__segLock(!SD.inLock);renderLockBtn();});fastTap($$('camL'));
+
+// cadeado ao lado do botão: verde aberto / vermelho fechado
+document.body.insertAdjacentHTML('beforeend','<button id="bLock" type="button" hidden aria-label="Cadeado da porta"></button>');
+document.head.insertAdjacentHTML('beforeend','<style>#bLock{position:fixed;left:calc(50% + 120px);bottom:calc(112px + env(safe-area-inset-bottom,0px));width:52px;height:52px;border-radius:50%;display:grid;place-items:center;z-index:31;cursor:pointer;padding:0;border:2px solid;transition:background .2s,border-color .2s}#bLock.op{background:rgba(20,90,40,.75);border-color:#4ade80;color:#4ade80}#bLock.cl{background:rgba(110,15,15,.8);border-color:#ff4a3a;color:#ff4a3a}#bLock svg{width:26px;height:26px}body.mxcut #bLock,body.pz #bLock{display:none!important}</style>');
+const LOCK_SVG={op:'<svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2" fill="currentColor"/><path d="M8 11V7a4 4 0 0 1 7.6-1.7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>',
+ cl:'<svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2" fill="currentColor"/><path d="M8 11V7a4 4 0 0 1 8 0v4" fill="none" stroke="currentColor" stroke-width="2.4"/></svg>'};
+function renderLockBtn(){const b=$$('bLock'),on=!!(SD&&SD.inLock);b.className=on?'cl':'op';b.innerHTML=on?LOCK_SVG.cl:LOCK_SVG.op;}
+$$('bLock').addEventListener('click',e=>{e.stopPropagation();e.preventDefault();window.__segLock(!SD.inLock);renderLockBtn();});fastTap($$('bLock'));
+function updateLockBtn(){const b=$$('bLock');const show=!!SD&&!MX.lock&&!MX.dead&&window.__segInside()&&Math.hypot(P.pos.x-13.5,P.pos.z+1)<2.3;if(b.hidden===show){b.hidden=!show;if(show)renderLockBtn();}}
+addEventListener('keydown',e=>{if(e.code==='KeyL'&&!$$('bLock').hidden)$$('bLock').click();});
 // o professor fica batendo na porta trancada e uma hora desiste (no Pesadelo ele arromba)
 function updateSegDoor(dt){if(!SD||!SD.inLock)return;SD.open=false;SD.c.off=false;
   for(const A of [PROF,GUARD]){if(!A.ready||!A.pos||A===GUARD&&GUARD.dead)continue;if(Math.abs(A.pos.y-F2)>.8)continue;
@@ -2813,7 +2824,7 @@ function mechUpdate(dt){if(!started||CS.active)return;if(paused){return;}if(!mst
   // banheiro
   if(MX.phase==='banheiro'&&!BC&&P.y<.5&&Math.hypot(P.pos.x-2.3,P.pos.z-4.25)<1.4)startBathCut();
   updateHeld(dt);updateBathCut(dt);if(!GUARD.dead)updateGuard(dt);else if(GUARD.mixer)GUARD.mixer.update(0);
-  updateRitual(dt);updateProfScript(dt);updateStory(dt);if(PROF.state!=='ritual'&&PROF.state!=='script')updateProf(dt);else if(PROF.ready&&PROF.state==='ritual'){PROF.v.mixer.update(dt);PROF.root.position.copy(PROF.pos);PROF.root.rotation.y=PROF.yaw;PROF.v.follow();}updateJumpscare(dt);updateScares(dt);updateSoundscape(dt);updateCams(dt);updateSegDoor(dt);
+  updateRitual(dt);updateProfScript(dt);updateStory(dt);if(PROF.state!=='ritual'&&PROF.state!=='script')updateProf(dt);else if(PROF.ready&&PROF.state==='ritual'){PROF.v.mixer.update(dt);PROF.root.position.copy(PROF.pos);PROF.root.rotation.y=PROF.yaw;PROF.v.follow();}updateJumpscare(dt);updateScares(dt);updateSoundscape(dt);updateCams(dt);updateSegDoor(dt);updateLockBtn();
   if(!MX.lock)updateArrow(dt);
   $$('arrow').hidden=!arrowTarget()||MX.lock;}
 // trava o olhar durante cenas
