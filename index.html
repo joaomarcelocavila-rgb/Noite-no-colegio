@@ -2417,13 +2417,13 @@ function die(cause){if(MX.dead)return;MX.dead=true;MX.lock=true;if(cause!=='prof
 
 /* ---------------- professor ---------------- */
 const PROF={ready:false,active:false,state:'off',hp:300,pos:new THREE.Vector3(25,0,-30),yaw:0,path:null,pi:0,lastSeen:null,loseT:0,stun:0,repath:0,seenOnce:false,dead:false};
-(function(){const img=new Image();img.onload=()=>{try{VIL.loadVillain(VIL.faceCanvas(img),v=>{PROF.v=v;PROF.root=v.root;v.root.visible=false;scene.add(v.root);v.acts.walk&&v.acts.walk.play();PROF.cur=v.acts.walk;PROF.ready=true;
+(function(){const img=new Image();img.onload=()=>{try{VIL.loadVillain(VIL.faceCanvas(img),v=>{PROF.v=v;PROF.root=v.root;try{brokenProf(v);}catch(e){console.warn(e);}v.root.visible=false;scene.add(v.root);v.acts.walk&&v.acts.walk.play();PROF.cur=v.acts.walk;PROF.ready=true;
   v.root.traverse(o=>{if(o.isMesh)o.frustumCulled=false;});});}catch(e){console.warn('professor',e);}};img.src=VIL.FACE;})();
 
 function brokenProf(v){let nm=false;const b=n=>v.root.getObjectByName(n);
   const bones=[[b('Bip01_Neck'),.0,.0,.28],[b('Bip01_Head'),.12,.15,.42],[b('Bip01_L_UpperArm'),.0,.0,-.35],[b('Bip01_L_Forearm'),.0,.9,.0],[b('Bip01_R_Hand'),.6,.0,.4],[b('Bip01_Spine1'),.0,.12,.06],[b('Bip01_L_Clavicle'),.0,.0,-.25]].filter(x=>x[0]);
   const f0=v.follow;let lastT=-1;
-  v.follow=function(){const tm=v.mixer.time;if(tm!==lastT){lastT=tm;const K=(window.DIFF_ID==='pesadelo'?1.4:1)*(PROF.state==='kill'?.35:1);const tw=Math.sin(tm*9)>.96?.25:0;// tranco de vez em quando
+  if(false)v.follow=function(){const tm=v.mixer.time;if(tm!==lastT){lastT=tm;const K=(window.DIFF_ID==='pesadelo'?1.4:1)*(PROF.state==='kill'?.35:1);const tw=Math.sin(tm*9)>.96?.25:0;// tranco de vez em quando
       for(const [bn,x,y,z] of bones){bn.rotation.x+=x*K;bn.rotation.y+=y*K;bn.rotation.z+=(z+(bn.name==='Bip01_Head'?tw:0))*K;}v.root.updateMatrixWorld(true);}return f0.apply(this,arguments);};
   // mais sangue na roupa (e muito mais no Pesadelo)
   const paint=()=>v.root.traverse(o=>{if(!o.isMesh||!o.material||!o.material.map)return;const m=o.material;const img=m.map.image;const apply=()=>{const w=img.width,h=img.height;if(!w)return;const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');g.drawImage(img,0,0);
