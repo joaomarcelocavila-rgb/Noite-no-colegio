@@ -1657,18 +1657,24 @@ let SAVE;try{SAVE=Object.assign({},DEF,JSON.parse(localStorage.getItem(SAVE_KEY)
 function persist(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(SAVE));}catch(_){}}
 const SET=SAVE.settings;
 const ACH=[
- ['entrar','Boa noite, colégio','Entrar pela portaria.',20],
- ['catraca','Catraqueiro','Passar 10 vezes pelas catracas.',30],
- ['rampa','Lá em cima','Subir pro 1º andar.',30],
- ['esconde','Esconde-esconde','Usar um esconderijo.',40],
- ['quadra','Quadra vazia','Entrar na quadra à noite.',30],
- ['infantil','Corajoso','Chegar no portão do infantil.',50],
- ['lanche','Hora do lanche','Pegar 3 suprimentos na cantina.',50],
- ['trevo','Sorte grande','Achar o trevo de 4 folhas.',80],
- ['explorador','Explorador','Visitar 15 lugares diferentes.',80],
- ['mochila','Missão cumprida','Pegar sua mochila no 9º A.',100],
- ['moedas','Colecionador','Achar as 12 moedas.',120],
- ['palhaco','Sobrevivente','Escapar do palhaço. (em breve)',150]];
+ ['entrar','Boa noite, colégio','Entrar pela portaria.','facil'],
+ ['mochila','Esqueci uma coisa','Pegar sua mochila no 9º A.','facil'],
+ ['lanterna','Luz no escuro','Ficar com a lanterna do segurança.','facil'],
+ ['esconde','Esconde-esconde','Se esconder num armário ou banheiro.','facil'],
+ ['fita1','Gravação antiga','Ouvir a primeira fita.','facil'],
+ ['trevo','Sorte grande','Achar o trevo de 4 folhas.','media'],
+ ['moedas','Colecionador','Juntar 12 moedas.','media'],
+ ['cameras','Olho de vigia','Usar as câmeras da sala de segurança.','media'],
+ ['fitas6','A verdade','Juntar 6 fitas.','media'],
+ ['fuga','Quase…','Abrir o portão e tentar fugir.','media'],
+ ['armario','Prendi a respiração','Ele te viu entrar no armário… e desistiu.','dificil'],
+ ['matar','Fim do treino','Derrotar o professor.','dificil'],
+ ['verdadeiro','Final verdadeiro','Derrotar o professor com as 6 fitas.','dificil'],
+ ['semmedo','Sem medo','Terminar o jogo no Difícil ou no Pesadelo.','dificil'],
+ ['fantasma','Fantasma','Terminar o jogo sem o professor te ver nenhuma vez.','dificil'],
+ ['pesadelo','Acordado no pesadelo','Conseguir o final verdadeiro no Pesadelo.','impossivel'],
+ ['relampago','Sem olhar pra trás','Terminar o jogo no Pesadelo em menos de 8 minutos.','impossivel']];
+const TIER={facil:['Fácil','#7fd67a'],media:['Média','#f2c230'],dificil:['Difícil','#ff7a3a'],impossivel:['Impossível','#e0291f']};
 const SHOP=[
  ['lanterna_forte','Lanterna forte','A luz vai mais longe e abre mais.',150,'up','#fff0d0'],
  ['tenis','Tênis de corrida','Corre 15% mais rápido.',200,'up','#e8b81c'],
@@ -1681,11 +1687,11 @@ const visited=new Set();
 const $=id=>document.getElementById(id);
 function money(){$('walletN').textContent=SAVE.coins;$('coinN').textContent=SAVE.coins;}
 let toastT=0;
-function unlock(id){if(SAVE.ach[id])return;const a=ACH.find(x=>x[0]===id);if(!a)return;SAVE.ach[id]=Date.now();SAVE.coins+=a[3];persist();money();$('toastT').textContent=a[1]+'  +'+a[3];$('toast').classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>$('toast').classList.remove('on'),3200);if(ac)chime();renderAch();}
+function unlock(id){if(SAVE.ach[id])return;const a=ACH.find(x=>x[0]===id);if(!a)return;SAVE.ach[id]=Date.now();persist();$('toastT').textContent=a[1]+' · '+TIER[a[3]][0];$('toast').classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>$('toast').classList.remove('on'),3200);if(ac)chime();renderAch();}
 function chime(){const t=ac.currentTime;[660,880,1320].forEach((f,i)=>{const o=ac.createOscillator();o.type='triangle';o.frequency.value=f;const g=ac.createGain();g.gain.setValueAtTime(.0001,t+i*.09);g.gain.exponentialRampToValueAtTime(.12,t+i*.09+.02);g.gain.exponentialRampToValueAtTime(.0001,t+i*.09+.5);o.connect(g).connect(master||ac.destination);o.start(t+i*.09);o.stop(t+i*.09+.6);});}
 function renderAch(){const n=ACH.filter(a=>SAVE.ach[a[0]]).length;
- $('pach').innerHTML='<h2>Conquistas</h2><p class="sub">'+n+' de '+ACH.length+' desbloqueadas · cada uma dá moedas pra gastar na loja.</p><div class="bar"><i style="width:'+(n/ACH.length*100)+'%"></i></div>'+
-  ACH.map((a,i)=>'<div class="ach'+(SAVE.ach[a[0]]?' done':'')+'"><div class="ic">'+(SAVE.ach[a[0]]?'✓':String(i+1).padStart(2,'0'))+'</div><div><b>'+a[1]+'</b><small>'+a[2]+'</small></div><div class="rw"><span class="coin"></span>'+a[3]+'</div></div>').join('');}
+ $('pach').innerHTML='<h2>Conquistas</h2><p class="sub">'+n+' de '+ACH.length+' desbloqueadas.</p><div class="bar"><i style="width:'+(n/ACH.length*100)+'%"></i></div>'+
+  ACH.map((a,i)=>'<div class="ach'+(SAVE.ach[a[0]]?' done':'')+'"><div class="ic">'+(SAVE.ach[a[0]]?'✓':String(i+1).padStart(2,'0'))+'</div><div><b>'+a[1]+'</b><small>'+a[2]+'</small></div><div class="rw" style="color:'+TIER[a[3]][1]+';font-weight:700;letter-spacing:.06em;font-size:11px;text-transform:uppercase">'+TIER[a[3]][0]+'</div></div>').join('');}
 function renderShop(){
  $('pshop').innerHTML='<h2>Loja</h2><p class="sub" style="font-size:18px;color:#f2c230;margin:30px 0">Disponível em breve.</p><p class="sub">Você tem <span class="coin"></span>'+SAVE.coins+' moedas guardadas.</p>';if(0)$('pshop').innerHTML='<h2>Loja</h2><p class="sub">Você tem <span class="coin"></span>'+SAVE.coins+' moedas. Ganhe mais com conquistas e achando moedas no colégio.</p><div class="shop">'+
   SHOP.map(s=>{const own=SAVE.owned.includes(s[0]);const eq=s[4]==='lanterna'?SAVE.equip.lanterna===s[0]:(own&&SAVE.equip[s[0]]!==false);
@@ -2442,7 +2448,7 @@ function profSees(){if(P.hidden)return false;const eye=PROF.pos.clone();eye.y+=2
   const dir=new THREE.Vector3(Math.sin(PROF.yaw),0,Math.cos(PROF.yaw));const to=me.clone().sub(eye);to.y=0;to.normalize();
   const lit=P.light&&MX.hasLight;if(dir.dot(to)<Math.cos(lit?1.1:.95)&&d>3)return false;if(!lit&&d>DF().vis*.45)return false;return lineOfSight(eye,me);}
 PROF.hit=function(dmg){if(PROF.dead)return;PROF.hp-=dmg;bossBar();PROF.stun=Math.max(PROF.stun,.45);scream(.35,.5,.7);if(PROF.state!=='chase'){PROF.state='chase';}
-  if(PROF.hp<=0){PROF.dead=true;PROF.state='dead';PROF.fall=0;MX.won=true;MX.lock=true;scream(1,2.2,.6);if(MX.tapes.length>=6){curseEnding();return;}setTimeout(()=>{const f=$$('fade');f.style.transition='opacity 1.2s';f.style.opacity=.85;setTimeout(()=>endScreen(true,'O professor caiu e não levantou mais. Mas, no escuro do corredor, o apito continua tocando sozinho…'),1300);},2200);}};
+  if(PROF.hp<=0){PROF.dead=true;PROF.state='dead';PROF.fall=0;MX.won=true;MX.lock=true;scream(1,2.2,.6);unlock('matar');winAch();if(MX.tapes.length>=6){unlock('verdadeiro');if(window.DIFF_ID==='pesadelo')unlock('pesadelo');curseEnding();return;}setTimeout(()=>{const f=$$('fade');f.style.transition='opacity 1.2s';f.style.opacity=.85;setTimeout(()=>endScreen(true,'O professor caiu e não levantou mais. Mas, no escuro do corredor, o apito continua tocando sozinho…'),1300);},2200);}};
 function updateProf(dt){if(!PROF.ready||!PROF.active)return;const v=PROF.v;if(PROF.state==='ending')return;
   if(PROF.state==='dead'){PROF.fall=Math.min(1,PROF.fall+dt*.9);v.mixer.update(dt*.3);PROF.root.rotation.x=-PROF.fall*Math.PI/2;PROF.root.position.y=PROF.pos.y+.15*PROF.fall;v.follow();return;}
   if(PROF.state==='kill'){v.mixer.update(dt);v.follow();return;}
@@ -2454,7 +2460,7 @@ function updateProf(dt){if(!PROF.ready||!PROF.active)return;const v=PROF.v;if(PR
   for(const n of noises){if(n.used)continue;if(n.p.distanceTo(PROF.pos)<n.loud*DF().hear&&PROF.state!=='chase'){n.used=true;PROF.state='investigate';PROF.path=navPath(PROF.pos,n.p);PROF.pi=1;}}
   // correr perto faz barulho
   if(P.speed>4&&dist<9*DF().hear&&PROF.state!=='chase'&&PROF.state!=='alert'&&Math.abs(me.y-PROF.pos.y)<2.5){PROF.state='investigate';PROF.path=navPath(PROF.pos,me);PROF.pi=1;}
-  if(sees){PROF.lastSeen=me.clone();PROF.lastSeenT=0;if(PROF.state!=='chase'&&PROF.state!=='alert'){PROF.state='alert';PROF.alertT=0;pPlay('whistle',.2);v.acts.whistle.reset().play();PROF.cur=v.acts.whistle;}}
+  if(sees){MX.everSeen=true;PROF.lastSeen=me.clone();PROF.lastSeenT=0;if(PROF.state!=='chase'&&PROF.state!=='alert'){PROF.state='alert';PROF.alertT=0;pPlay('whistle',.2);v.acts.whistle.reset().play();PROF.cur=v.acts.whistle;}}
   else if(PROF.lastSeen)PROF.lastSeenT=(PROF.lastSeenT||0)+dt;
   if(PROF.state==='alert'){PROF.alertT+=dt;const ty=Math.atan2(me.x-PROF.pos.x,me.z-PROF.pos.z);PROF.yaw=angLerp(PROF.yaw,ty,Math.min(1,dt*6));if(PROF.alertT>(PROF.seenOnce?.35:DF().alert)){PROF.seenOnce=true;PROF.state='chase';PROF.repath=0;}}
   else if(PROF.state==='chase'){pPlay('sprint',.2);PROF.repath-=dt;if(PROF.repath<=0){PROF.repath=.45;PROF.path=navPath(PROF.pos,sees?me:(PROF.lastSeen||me));PROF.pi=1;}
@@ -2487,7 +2493,7 @@ function lockerHunt(dt,me,dist){const L=PROF.sawLocker,v=PROF.v;
       if(Math.random()<ch){// ele abre o armário e te puxa
         L.pulse=1;creakDoor(true);slam();setTimeout(()=>{if(P.locker===L)killScene('prof');},350);}
       else{PROF.sawLocker=null;PROF.lwAt=false;PROF.state='roam';PROF.path=null;PROF.lastSeen=null;PROF.avoidSeg=20;
-        const away=randomNode(p=>p.distanceTo(PROF.pos)>14&&p.distanceTo(PROF.pos)<30);if(away){PROF.path=navPath(PROF.pos,away);PROF.pi=1;}hint('Ele desistiu… por enquanto.',2);}}}
+        const away=randomNode(p=>p.distanceTo(PROF.pos)>14&&p.distanceTo(PROF.pos)<30);if(away){PROF.path=navPath(PROF.pos,away);PROF.pi=1;}hint('Ele desistiu… por enquanto.',2);unlock('armario');}}}
   v.mixer.update(dt);PROF.root.position.copy(PROF.pos);PROF.root.rotation.y=PROF.yaw;v.follow();musicUpdate(dt,true,dist);return true;}
 let KS=null;
 function killScene(who){if(KS||MX.dead||MX.won)return;if(who==='prof'&&!PROF.ready)who='guard';if(who==='guard'&&!GUARD.ready){die('x');return;}
@@ -2606,13 +2612,13 @@ function autoLantern(){const w=MX.lanternaItem;if(w&&!w.gone){w.gone=true;scene.
     hint('Mochila cheia: largou '+ITEMS[old.id].n+' pra levar a lanterna.',3);}
   takeLantern();hint('As luzes apagaram. Você pegou a lanterna do segurança.',3.5);}
 function buzz(){if(!ac)return;const t=ac.currentTime;const o=ac.createOscillator();o.type='sawtooth';o.frequency.value=100;const g=ac.createGain();g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.08,t+.1);g.gain.setValueAtTime(.08,t+1.6);g.gain.exponentialRampToValueAtTime(.0001,t+1.8);o.connect(g).connect(master);o.start(t);o.stop(t+1.9);}
-function takeLantern(){MX.hasLight=true;MX.bat=100;addItem('lanterna');MX.sel=MX.inv.findIndex(x=>x&&x.id==='lanterna');MX.torchOn=true;renderInv();if(MX.floorLight){MX.floorLight.intensity=0;}renderStats();
+function takeLantern(){unlock('lanterna');MX.hasLight=true;MX.bat=100;addItem('lanterna');MX.sel=MX.inv.findIndex(x=>x&&x.id==='lanterna');MX.torchOn=true;renderInv();if(MX.floorLight){MX.floorLight.intensity=0;}renderStats();
   MX.phase='sobreviver';setObjective('Sobreviva. Ache armas pra acabar com o professor.',null);hint('Pegou a lanterna. A bateria acaba: guarde pilhas.',3);setObjective('Um barulho lá em cima…',null);setTimeout(()=>{if(!MX.dead)startRitual();},2200);}
 
 /* ---------------- fases ---------------- */
 function onBagTaken(){window.__bag.visible=false;addItem('sanduiche');addItem('salgadinho');addItem('chocolate');addItem('pilha');unlock('mochila');hint('Sua mochila! 3 lanchinhos e uma pilha.',2.5);if(window.__posterCreepy)window.__posterCreepy();
   setTimeout(()=>{scream(1.2,1.9,1);killGuard();setTimeout(()=>{hint('Que grito foi esse?! Veio lá de baixo… do banheiro.',3.5);MX.phase='banheiro';setObjective('Vá até o banheiro masculino',new THREE.Vector3(2.4,0,4.25));},1500);},1500);}
-function mechStart(){try{nightmareSetup();}catch(e){console.warn(e);}bLight.style.display='none';if(window.__clover)window.__clover.visible=false;for(const pu of pickups)pu.m.visible=false;{const gp=randomNode(p=>Math.abs(p.y-F1)<.2&&p.z>3.2&&p.z<6.3&&p.x>-14&&p.x<6);if(gp)GUARD.pos.copy(gp);}scatterItems();setObjective('Pegue sua mochila no 9º A (1º andar)',window.__bag.position.clone().setY(F1));bLight.hidden=true;P.light=false;renderStats();renderInv();applyLights();
+function mechStart(){MX.t0=performance.now();try{nightmareSetup();}catch(e){console.warn(e);}bLight.style.display='none';if(window.__clover)window.__clover.visible=false;for(const pu of pickups)pu.m.visible=false;{const gp=randomNode(p=>Math.abs(p.y-F1)<.2&&p.z>3.2&&p.z<6.3&&p.x>-14&&p.x<6);if(gp)GUARD.pos.copy(gp);}scatterItems();setObjective('Pegue sua mochila no 9º A (1º andar)',window.__bag.position.clone().setY(F1));bLight.hidden=true;P.light=false;renderStats();renderInv();applyLights();
   $$('stats').style.display='';$$('invbar').style.display='';}
 ['stats','invbar'].forEach(id=>$$(id).style.display='none');
 
@@ -2646,7 +2652,7 @@ window.__voz=window.__voz||[];let gravN=0;const gravLeft=GRAV.map((_,i)=>i).filt
 document.body.insertAdjacentHTML('beforeend','<div id="sub" hidden><b id="subW"></b><span id="subT"></span></div>');
 document.head.insertAdjacentHTML('beforeend','<style>#sub{position:fixed;left:50%;bottom:calc(150px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(560px,86vw);background:rgba(0,0,0,.72);border-left:3px solid #e0291f;padding:10px 14px;color:#f2ead6;font:500 14px/1.45 var(--f-body);z-index:8;pointer-events:none}#sub b{display:block;color:#e0291f;font-size:11px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:3px}</style>');
 let subT=0;
-function takeTape(fixed){let i=fixed;if(i==null){i=gravLeft.length?gravLeft.pop():-1;if(i<0)return;}if(!MX.tapes.includes(i))MX.tapes.push(i);addItem('fita');playRecording(i);
+function takeTape(fixed){let i=fixed;if(i==null){i=gravLeft.length?gravLeft.pop():-1;if(i<0)return;}if(!MX.tapes.includes(i))MX.tapes.push(i);addItem('fita');unlock('fita1');if(MX.tapes.length>=6)unlock('fitas6');playRecording(i);
   renderTapeBtn();
   if(MX.tapes.length>=6&&!MX.apitoOn){MX.apitoOn=true;setTimeout(()=>{if(MX.won||MX.dead)return;sting(1);hint('6 fitas. Agora você sabe a verdade: mate o professor e a maldição acaba.',5);setObjective('Mate o professor',null);renderTapeBtn();},Math.max(5000,subT*1000));}}
 document.body.insertAdjacentHTML('beforeend','<button id="tapeBtn" type="button" hidden><span>📼</span><b id="tapeN">0/6</b><i id="tapeM"></i></button>');
@@ -2750,7 +2756,7 @@ function curseEnding(){document.body.classList.add('mxcut');$$('boss').hidden=tr
       c.position.set(x,P.y,z);c.rotation.y=Math.atan2(P.pos.x-x,P.pos.z-z);scene.add(c);CE.ghosts.push({c,mx,i,born:CE.t});});
     choir();hint('Lá fora, os alunos que ele chamou… estão livres.',4);},4300);
   setTimeout(()=>{const f=$$('fade');f.style.background='#fff';f.style.transition='opacity 2.4s';f.style.opacity=1;},10400);
-  setTimeout(()=>{const f=$$('fade');f.style.background='#000';endScreen(true,'O apito quebrou e a maldição acabou. Um a um, os alunos que ele chamou foram embora. O último olhou pra você e sorriu: era o Davi, do 9º ano. Depois de tanto tempo, ele finalmente pôde ir pra casa.');$$('endT').textContent='FINAL VERDADEIRO';unlock('mochila');},13200);
+  setTimeout(()=>{const f=$$('fade');f.style.background='#000';endScreen(true,'O apito quebrou e a maldição acabou. Um a um, os alunos que ele chamou foram embora. O último olhou pra você e sorriu: era o Davi, do 9º ano. Depois de tanto tempo, ele finalmente pôde ir pra casa.');$$('endT').textContent='FINAL VERDADEIRO';},13200);
   let last=performance.now();(function tick(){const now=performance.now(),dt=Math.min(.05,(now-last)/1000);last=now;CE.t+=dt;
     if(CE.fade&&PROF.root){CE.fo=(CE.fo||1)-dt*.45;PROF.root.traverse(o=>{if(o.isMesh&&o.material)o.material.opacity=Math.max(0,CE.fo);});if(CE.fo<=0)PROF.root.visible=false;}
     for(const g of CE.ghosts){const a=CE.t-g.born;const fin=a<1.2?a/1.2:1;const leave=8.6-g.i*.55;const out=sm(leave-2.6,leave,a);g.c.traverse(o=>{if(o.isMesh)o.material.opacity=.42*fin*(1-out)*(.85+.15*Math.sin(now/180+g.i));});g.c.position.y=P.y+out*1.4+Math.sin(now/600+g.i)*.03;g.mx.update(dt*.4);}
@@ -2769,7 +2775,8 @@ function scatterStory(){const ok=p=>p.z<21.5&&!inLocked(p)&&!(p.x>9&&p.x<21&&p.z
 function updateStory(dt){if(subT>0){subT-=dt;if(subT<=0)$$('sub').hidden=true;}
   if(MX.phase==='fuga'&&!MX.won&&!MX.lock&&P.y<.5&&P.pos.z>20.6&&Math.abs(P.pos.x-15)<2.3){if(hasItem('chaveportao')){escapeGate();}else if(!MX.gateMsg){MX.gateMsg=1;hint('O portão está trancado. A chave dele tá escondida numa sala trancada.',3);}}
   if(P.pos.z<19.5)MX.gateMsg=0;}
-function escapeGate(){MX.lock=true;MX.won=true;{const ki=MX.inv.findIndex(x=>x&&x.id==='chaveportao');if(ki>=0){MX.inv[ki]=null;MX.sel=-1;renderInv();}}handReach(()=>{clickSound();clang();gateState='open';gateCol.off=true;let k=0;const iv=setInterval(()=>{k=Math.min(1,k+.04);gate.position.x=15-4.2*k;if(k>=1)clearInterval(iv);},30);},false);
+function winAch(){const d=window.DIFF_ID;if(d==='dificil'||d==='pesadelo')unlock('semmedo');if(!MX.everSeen)unlock('fantasma');if(d==='pesadelo'&&MX.t0&&performance.now()-MX.t0<480000)unlock('relampago');}
+function escapeGate(){unlock('fuga');winAch();MX.lock=true;MX.won=true;{const ki=MX.inv.findIndex(x=>x&&x.id==='chaveportao');if(ki>=0){MX.inv[ki]=null;MX.sel=-1;renderInv();}}handReach(()=>{clickSound();clang();gateState='open';gateCol.off=true;let k=0;const iv=setInterval(()=>{k=Math.min(1,k+.04);gate.position.x=15-4.2*k;if(k>=1)clearInterval(iv);},30);},false);
   setTimeout(startGrabEnding,1500);}
 
 /* ---------------- cutscene: subindo a rampa, o ritual, o armário ---------------- */
@@ -3106,7 +3113,7 @@ document.body.insertAdjacentHTML('beforeend','<div id="camUI" hidden><div class=
 document.head.insertAdjacentHTML('beforeend','<style>#camUI{position:fixed;inset:0;z-index:20;pointer-events:none;background:repeating-linear-gradient(180deg,rgba(0,0,0,.18) 0 2px,transparent 2px 4px),radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.75))}#camUI .cl{position:absolute;left:18px;top:16px;font:700 15px monospace;color:#c8ffd6;text-shadow:0 0 6px rgba(120,255,160,.7);display:flex;flex-direction:column;gap:4px}#camT{color:#ff4a3a;animation:qp 1s steps(2) infinite}#camUI .cb{position:absolute;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);display:flex;gap:10px;align-items:center;pointer-events:auto}#camUI button{font:700 15px monospace;color:#c8ffd6;background:rgba(0,20,8,.7);border:1px solid rgba(150,255,180,.5);border-radius:8px;padding:10px 16px;cursor:pointer}#camI{font:700 13px monospace;color:#c8ffd6;min-width:44px;text-align:center}body.camon canvas{filter:grayscale(1) sepia(.5) hue-rotate(70deg) saturate(2.2) brightness(1.25) contrast(1.25)}</style>');
 window.__camNear=function(){if(MX.lock||!started)return null;if(Math.abs(P.y-F2)>.6)return null;const d=Math.hypot(P.pos.x-15.4,P.pos.z+1.5);if(d<1.4)return {kind:'cams',d,txt:'Ver câmeras'};return null;};
 function camShow(){const c=CAMS[CAMV.i];$$('camN').textContent='CAM 0'+(CAMV.i+1)+' · '+c[0];$$('camI').textContent=(CAMV.i+1)+'/'+CAMS.length;CAMV.t=0;clickSound();}
-window.__openCams=function(){CAMV.on=true;MX.lock=true;MX.lookOK=false;$$('camUI').hidden=false;document.body.classList.add('camon');camShow();try{document.exitPointerLock&&document.exitPointerLock();}catch(_){}};
+window.__openCams=function(){unlock('cameras');CAMV.on=true;MX.lock=true;MX.lookOK=false;$$('camUI').hidden=false;document.body.classList.add('camon');camShow();try{document.exitPointerLock&&document.exitPointerLock();}catch(_){}};
 function closeCams(){if(!CAMV.on)return;CAMV.on=false;MX.lock=false;$$('camUI').hidden=true;document.body.classList.remove('camon');applyLights();if(!isTouch)tryLock();}
 $$('camP').addEventListener('click',e=>{e.stopPropagation();CAMV.i=(CAMV.i+CAMS.length-1)%CAMS.length;camShow();});
 $$('camNx').addEventListener('click',e=>{e.stopPropagation();CAMV.i=(CAMV.i+1)%CAMS.length;camShow();});
