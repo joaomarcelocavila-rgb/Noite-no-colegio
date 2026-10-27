@@ -178,6 +178,7 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
 <div id="toast"><span class="coin"></span><div><div class="t1">Conquista desbloqueada</div><div class="t2" id="toastT"></div></div></div>
 <div id="nv" class="fx" hidden></div>
 <div id="menu">
+  <button id="acctChip" type="button"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 21c1-4 4.5-6 8-6s7 2 8 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span id="acctTxt">Entrar</span></button>
   <div class="side">
     <div class="brand">Recife · 23h47 · Estrada do Alvorecer</div>
     <h1>Noite no<span>Colégio</span></h1>
@@ -189,7 +190,7 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
       <button class="mbtn" data-p="ach" type="button"><svg viewBox="0 0 24 24"><path d="M7 4h10v4a5 5 0 0 1-10 0zM12 13v4M8 21h8M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Conquistas</span></button>
       <button class="mbtn" data-p="shop" type="button"><svg viewBox="0 0 24 24"><path d="M5 8h14l-1.2 11H6.2zM9 8V6a3 3 0 0 1 6 0v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg><span>Loja</span></button>
       <button class="mbtn" id="mQuit" type="button" hidden style="color:#ff8a7a;border-left-color:rgba(255,90,70,.6)"><svg viewBox="0 0 24 24"><path d="M10 4H5v16h5M14 8l4 4-4 4M18 12H9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Sair do jogo</span></button>
-      <button class="mbtn" data-p="conta" type="button"><svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2"/></svg><span id="contaLbl">Entrar</span></button>
+      <button class="mbtn" data-p="conta" type="button" hidden id="contaMbtn"><svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2"/></svg><span id="contaLbl">Entrar</span></button>
       <button class="mbtn" data-p="set" type="button"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>Ajustes</span></button>
     </nav>
     <div class="wallet"><span class="coin"></span><span id="walletN">0</span> moedas</div>
@@ -1706,7 +1707,7 @@ async function cloudLoad(){if(!SB||!ME)return;try{const {data:p}=await SB.from('
     await loadPaid();try{localStorage.setItem(SAVE_KEY,JSON.stringify(SAVE));}catch(_){}cloudSave();money();renderAll();}catch(e){console.warn(e);}}
 async function loadPaid(){if(!SB||!ME)return;const {data}=await SB.from('purchases').select('skin,status').eq('user_id',ME.id).eq('status','paid');PAIDOWN=new Set((data||[]).map(r=>r.skin));for(const k of PAIDOWN)delete PAYWAIT[k];}
 if(SB){SB.auth.onAuthStateChange((ev,ses)=>{const u=ses&&ses.user;const was=ME&&ME.id;ME=u?{id:u.id,email:u.email}:null;if(ME&&ME.id!==was)cloudLoad();if(!ME){PAIDOWN=new Set();}try{renderConta();}catch(e){}});}
-function renderConta(){const p=$('pconta');if(!p)return;const lbl=$('contaLbl');if(lbl)lbl.textContent=ME?'Conta':'Entrar';
+function renderConta(){const p=$('pconta');if(!p)return;const lbl=$('contaLbl');if(lbl)lbl.textContent=ME?'Conta':'Entrar';const at=$('acctTxt');if(at)at.textContent=ME?(ME.nick||ME.email.split('@')[0]):'Entrar';
   if(!SB){p.innerHTML='<h2>Conta</h2><p class="sub">Não deu pra conectar ao servidor agora. Verifique a internet e abra o jogo de novo.</p>';return;}
   if(ME){p.innerHTML='<h2>Conta</h2><p class="sub">Logado como <b>'+(ME.nick||ME.email)+'</b>. Seu progresso (moedas, skins e conquistas) fica salvo na nuvem.</p><div class="set"><label>E-mail<small>'+ME.email+'</small></label><button class="pill" id="cOut" type="button">Sair</button></div><p class="sub" id="cMsg"></p>';
     $('cOut').onclick=async()=>{await SB.auth.signOut();};return;}
@@ -1725,6 +1726,8 @@ async function payBuy(id,btn){if(!SB){alertish('Sem conexão com o servidor.');r
   btn.textContent='Abrindo pagamento…';try{const {data:{session}}=await SB.auth.getSession();const r=await fetch(SB_URL+'/functions/v1/asaas-checkout',{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_KEY,Authorization:'Bearer '+session.access_token},body:JSON.stringify({skin:id})});const j=await r.json();
     if(j.status==='paid'){await loadPaid();renderShop();renderChars();return;}if(!j.url){btn.textContent=j.error||'Não deu agora';return;}
     PAYWAIT[id]=1;window.open(j.url,'_blank');renderShop();let n=0;const iv=setInterval(async()=>{n++;await loadPaid();if(PAIDOWN.has(id)||n>40){clearInterval(iv);renderShop();renderChars();if(PAIDOWN.has(id)){SAVE.profSkin=id;persist();try{if(PROF.ready)applyChar(PROF.v,id);}catch(e){}}}},6000);}catch(e){btn.textContent='Erro: '+e.message;}}
+document.head.insertAdjacentHTML('beforeend','<style>#acctChip{position:absolute;right:calc(16px + env(safe-area-inset-right,0px));top:calc(14px + env(safe-area-inset-top,0px));z-index:6;display:flex;align-items:center;gap:8px;font:700 13px var(--f-body);letter-spacing:.06em;text-transform:uppercase;color:#f2ead6;background:rgba(12,14,20,.8);border:1px solid rgba(242,194,48,.55);border-radius:999px;padding:8px 14px 8px 10px;cursor:pointer}#acctChip svg{width:18px;height:18px;color:#f2c230}.pclose{top:calc(62px + env(safe-area-inset-top,0px))!important}</style>');
+setTimeout(()=>{const c=$('acctChip');if(c){c.onclick=e=>{e.stopPropagation();const was=!$('pconta').hidden;closePanels();if(was)return;$('pconta').hidden=false;$('pClose').hidden=false;renderConta();};try{fastTap(c);}catch(_){}}try{renderConta();}catch(_){}},0);
 function alertish(t){try{hint(t,2.5);}catch(e){}}
 const SET=SAVE.settings;
 const ACH=[
