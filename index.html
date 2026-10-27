@@ -3036,7 +3036,7 @@ function takeTape(fixed){let i=fixed;if(i==null){i=gravLeft.length?gravLeft.pop(
     hint('6 fitas. Agora você entende: elas precisam voltar pro círculo da sala do 3º ano.',6);setObjective('Leve as fitas pro círculo do 3º ano',new THREE.Vector3(2.25,F1,14.1));renderTapeBtn();},Math.max(5000,subT*1000));}}
 document.body.insertAdjacentHTML('beforeend','<button id="tapeBtn" type="button" hidden><span>📼</span><b id="tapeN">0/6</b><i id="tapeM"></i></button>');
 document.head.insertAdjacentHTML('beforeend','<style>#tapeBtn{position:fixed;z-index:7;display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:10px;border:1px solid rgba(242,234,214,.16);background:rgba(10,12,18,.45);color:#f2ead6;font:700 11px var(--f-body);letter-spacing:.08em;cursor:pointer;-webkit-tap-highlight-color:transparent}#tapeBtn span{font-size:13px}#tapeBtn.full{border-color:rgba(224,41,31,.7);background:rgba(60,4,4,.6);animation:tpb 1.6s ease-in-out infinite}#tapeBtn i{font-style:normal;color:#ff5a4a;letter-spacing:.12em;text-transform:uppercase;font-size:10px}#tapeBtn i:empty{display:none}@keyframes tpb{50%{box-shadow:0 0 14px rgba(224,41,31,.55)}}body.mxcut #tapeBtn,body.pz #tapeBtn{display:none}</style>');
-function renderTapeBtn(){const b=$$('tapeBtn');if(!b)return;const n=MX.tapes.length,on=MX.phase==='fuga'||n>0;b.hidden=!on||MX.won;$$('tapeN').textContent=Math.min(n,6)+'/6';const full=n>=6&&MX.apitoOn;b.classList.toggle('full',full);$$('tapeM').textContent=MX.ritualDone?'Mate ou fuja':full?'Leve ao círculo':'';
+function renderTapeBtn(){const b=$$('tapeBtn');if(!b)return;const n=MX.tapes.length,on=mstarted;b.hidden=!on||MX.won;$$('tapeN').textContent=Math.min(n,6)+'/6';const full=n>=6&&MX.apitoOn;b.classList.toggle('full',full);$$('tapeM').textContent=MX.ritualDone?'Mate ou fuja':full?'Leve ao círculo':'';
   const st=$$('stats');if(st){const r=st.getBoundingClientRect();if(r.width){b.style.left=r.left+'px';b.style.top=(r.bottom+6)+'px';}}}
 $$('tapeBtn').addEventListener('click',e=>{e.stopPropagation();openTapes();});fastTap($$('tapeBtn'));
 setInterval(renderTapeBtn,1000);
@@ -3493,7 +3493,7 @@ function quickFlash(){if(!QF.imgs.length){faceFlash(1);return;}let i;do{i=(Math.
   const el=$$('qfImg');el.style.backgroundImage='url('+QF.imgs[i]+')';el.style.backgroundSize=Math.random()<.5?'cover':'contain';const z='z'+(1+((Math.random()*3)|0));el.className='on '+z;
   scream(1.3+Math.random()*.4,.6+Math.random()*.5,.8+Math.random()*.6);sting(1.2);KSshake();const d=$$('dmg');d.style.transition='none';d.style.opacity=.6;
   setTimeout(()=>{el.className='';d.style.transition='opacity .5s';d.style.opacity=0;},220+Math.random()*180);}
-window.__qf=(ch)=>{if(window.DIFF_ID==='pesadelo')ch*=2.5;if(MX.phase==='fuga'&&!MX.dead&&!MX.lock&&Math.random()<ch&&!(PROF.state==='chase'))quickFlash();};
+window.__qf=(ch)=>{ch*={facil:1,normal:2.2,dificil:3,pesadelo:4.5}[window.DIFF_ID]||2.2;if(MX.phase==='fuga'&&!MX.dead&&!MX.lock&&Math.random()<ch&&!(PROF.state==='chase'))quickFlash();};
 function updateScares(dt){
   // lanterna piscando como estrobo, e entre as piscadas ele aparece mais perto
   if(SC.strobe>0){SC.strobe-=dt;const on=Math.sin(SC.strobe*38)>.1;if(!on){P.light=false;flash.visible=false;if(TORCH)TORCH.userData.lensM.emissiveIntensity=0;}
@@ -3511,7 +3511,7 @@ function updateScares(dt){
   if(SC.dark>0){SC.dark-=dt;P.light=false;flash.visible=false;if(TORCH)TORCH.userData.lensM.emissiveIntensity=0;}
   if(MX.phase!=='fuga'||MX.lock||MX.dead||MX.won||P.locker)return;
   const chase=PROF.state==='chase'||PROF.state==='alert';const pd=PROF.ready?PROF.pos.distanceTo(new THREE.Vector3(P.pos.x,P.y,P.pos.z)):99;
-  SC.t-=dt;if(SC.t<=0){if(chase||pd<10){SC.t=8;return;}doScare();const m={facil:1.3,normal:1,dificil:.75,pesadelo:.4}[window.DIFF_ID]||1;SC.t=(22+Math.random()*28)*m;}}
+  SC.t-=dt;if(SC.t<=0){if(chase||pd<10){SC.t=8;return;}doScare();const m={facil:1.3,normal:.5,dificil:.36,pesadelo:.2}[window.DIFF_ID]||.5;SC.t=(22+Math.random()*28)*m;}}
 
 let pStepAcc=0,gStepAcc=0;
 function heavyStep(x,z,y,vol,low){if(!ac)return;const d=Math.hypot(x-P.pos.x,z-P.pos.z)+Math.abs(y-P.y)*3;if(d>32)return;const a=vol*Math.pow(1-d/32,2);if(a<.01)return;const t=ac.currentTime;
