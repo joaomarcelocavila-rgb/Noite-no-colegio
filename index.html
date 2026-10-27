@@ -2166,8 +2166,14 @@ function setChar(){if(SAVE.char==='professor')SAVE.char='aluno';const id=SAVE.ch
  else player=makeStudent();
  scene.add(player);applyEquip();}
 function renderAll(){renderChars();renderAch();renderShop();renderSet();}
+// resolução automática: se o FPS cair, baixa a resolução até ficar liso; se sobrar, sobe de volta
+(function(){let fr=0,t0=performance.now(),slow=0,fast=0;(function tick(){fr++;const n=performance.now();if(n-t0>=2000){const fps=fr*1000/(n-t0);fr=0;t0=n;
+  if(typeof started!=='undefined'&&started&&!document.hidden&&renderer){const cur=window.__prCur||1,mx=window.__prMax||1;
+    if(fps<38){slow++;fast=0;if(slow>=1&&cur>.55){window.__prCur=Math.max(.55,cur-(fps<25?.25:.12));renderer.setPixelRatio(window.__prCur);renderer.setSize(innerWidth,innerHeight);if(renderer.shadowMap.enabled&&fps<25){renderer.shadowMap.enabled=false;}}}
+    else if(fps>57){fast++;slow=0;if(fast>=3&&cur<mx){window.__prCur=Math.min(mx,cur+.1);renderer.setPixelRatio(window.__prCur);renderer.setSize(innerWidth,innerHeight);fast=0;}}else{slow=0;fast=0;}}}
+  requestAnimationFrame(tick);})();})();
 function applySettings(){
- const pr={baixa:isTouch?.7:.8,media:isTouch?1.0:1.25,alta:Math.min(devicePixelRatio,isTouch?1.5:2)}[SET.qual];renderer.setPixelRatio(pr);renderer.setSize(innerWidth,innerHeight);
+ const pr={baixa:isTouch?.7:.8,media:isTouch?1.0:1.25,alta:Math.min(devicePixelRatio,isTouch?1.5:2)}[SET.qual];window.__prMax=pr;window.__prCur=Math.min(window.__prCur||pr,pr);renderer.setPixelRatio(window.__prCur);renderer.setSize(innerWidth,innerHeight);
  const sh=SET.qual==='alta';if(renderer.shadowMap.enabled!==sh){renderer.shadowMap.enabled=sh;scene.traverse(o=>{if(o.material){[].concat(o.material).forEach(m=>m.needsUpdate=true);}});}
  camera.fov=SET.fov;camera.updateProjectionMatrix();
  $('grain').hidden=!SET.grao;
