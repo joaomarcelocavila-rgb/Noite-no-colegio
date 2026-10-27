@@ -1911,15 +1911,28 @@ function reindeer(){const g=new THREE.Group();const fur=stdM(0x4a3020,.9),dark=s
   const legs=[];[[-.15,.4],[.15,.4],[-.15,-.42],[.15,-.42]].forEach(([x,z])=>{const l=new THREE.Group();l.position.set(x,.9,z);const m=new THREE.Mesh(new THREE.CylinderGeometry(.035,.03,.9,6),dark);m.position.y=-.45;l.add(m);g.add(l);legs.push(l);});
   g.userData={legs,head};g.traverse(o=>{if(o.isMesh)o.castShadow=true;});return g;}
 // gore: corta um membro, joga o pedaço no chão e deixa o sangue jorrando
-// risada de palhaço sintetizada (vários "HA" descendo de tom, meio maníaca)
-function clownLaugh(vol=.3,n=7){if(!ac)return;const t0=ac.currentTime;const base=230+Math.random()*40;
-  for(let i=0;i<n;i++){const t=t0+i*.17+(Math.random()*.03);const f0=base*(1.18-i*.045)*(i===0?1.15:1);const dur=.13+(i===n-1?.25:0);
-    const o=ac.createOscillator();o.type='sawtooth';o.frequency.setValueAtTime(f0*1.08,t);o.frequency.exponentialRampToValueAtTime(f0*.86,t+dur);
-    const vib=ac.createOscillator();vib.frequency.value=7;const vg=ac.createGain();vg.gain.value=f0*.03;vib.connect(vg).connect(o.frequency);
-    const g=ac.createGain();g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+.018);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
-    const sum=ac.createGain();[[780,7,1],[1230,8,.7],[2600,10,.35]].forEach(([fc,q,a])=>{const bp=ac.createBiquadFilter();bp.type='bandpass';bp.frequency.value=fc;bp.Q.value=q;const ga=ac.createGain();ga.gain.value=a*4;o.connect(bp).connect(ga).connect(sum);});
-    sum.connect(g);out(g,.55);o.start(t);o.stop(t+dur+.02);vib.start(t);vib.stop(t+dur+.02);
-    const h=ac.createBufferSource();h.buffer=noiseBuf;const hf=ac.createBiquadFilter();hf.type='bandpass';hf.frequency.value=1600;const hg=ac.createGain();hg.gain.setValueAtTime(vol*.5,t);hg.gain.exponentialRampToValueAtTime(.0001,t+.04);h.connect(hf).connect(hg);out(hg,.4);h.start(t,Math.random(),.05);}}
+// risada de palhaço de filme de terror: risadinha grave e maligna que sobe até uma gargalhada aguda e maníaca
+function clownLaugh(vol=.3,n=7){if(!ac)return;const t0=ac.currentTime+.02;const full=n>=7;
+  const bus=ac.createGain();bus.gain.value=vol;const ws=ac.createWaveShaper();const cv=new Float32Array(512);for(let i=0;i<512;i++){const x=i/256-1;cv[i]=Math.tanh(x*2.2);}ws.curve=cv;bus.connect(ws);out(ws,.75);
+  const V={a:[[730,90,1],[1090,110,.55],[2440,170,.3],[3400,250,.12]],e:[[530,80,1],[1840,110,.5],[2480,160,.3],[3500,250,.1]],i:[[300,60,.9],[2290,120,.5],[3010,180,.35],[3700,250,.12]]};
+  function syl(t,f0,f1,dur,vow,amp,growl){
+    const src=ac.createGain();
+    [['sawtooth',1,.7],['square',1.003,.25]].forEach(([ty,m,g])=>{const o=ac.createOscillator();o.type=ty;o.frequency.setValueAtTime(f0*m,t);o.frequency.linearRampToValueAtTime(f1*m,t+dur);
+      const j=ac.createOscillator();j.frequency.value=5.5+Math.random()*3;const jg=ac.createGain();jg.gain.value=f0*.035;j.connect(jg).connect(o.frequency);const og=ac.createGain();og.gain.value=g;o.connect(og).connect(src);o.start(t);o.stop(t+dur+.05);j.start(t);j.stop(t+dur+.05);});
+    if(growl){const o=ac.createOscillator();o.type='sawtooth';o.frequency.setValueAtTime(f0*.5,t);o.frequency.linearRampToValueAtTime(f1*.5,t+dur);const og=ac.createGain();og.gain.value=.5;o.connect(og).connect(src);o.start(t);o.stop(t+dur+.05);}
+    const h=ac.createBufferSource();h.buffer=noiseBuf;const hg=ac.createGain();hg.gain.setValueAtTime(.0001,t);hg.gain.exponentialRampToValueAtTime(.9,t+.012);hg.gain.exponentialRampToValueAtTime(.08,t+dur*.45);hg.gain.exponentialRampToValueAtTime(.0001,t+dur);h.connect(hg).connect(src);h.start(t,Math.random(),dur+.05);
+    const env=ac.createGain();env.gain.setValueAtTime(.0001,t);env.gain.exponentialRampToValueAtTime(amp,t+.025);env.gain.setValueAtTime(amp*.85,t+dur*.55);env.gain.exponentialRampToValueAtTime(.0001,t+dur);
+    V[vow].forEach(([fc,bw,a])=>{const bp=ac.createBiquadFilter();bp.type='bandpass';bp.frequency.value=fc;bp.Q.value=fc/bw;const g=ac.createGain();g.gain.value=a*6;src.connect(bp).connect(g).connect(env);});env.connect(bus);}
+  let t=t0;
+  // 1) "heh heh heh" grave, lento e ameaçador
+  const lows=full?4:3;for(let i=0;i<lows;i++){syl(t,105-i*3,92-i*3,.2,'e',.55,true);t+=.27-i*.02;}
+  t+=.08;
+  // 2) sobe de tom
+  for(let i=0;i<5;i++){const f=170+i*42;syl(t,f*1.05,f*.9,.13,'a',.7,false);t+=.15-i*.008;}
+  if(full){// 3) gargalhada aguda e maníaca
+    for(let i=0;i<6;i++){const f=390+Math.sin(i)*25;syl(t,f*1.08,f*.88,.1,i%2?'i':'a',.85,false);t+=.115;}
+    // 4) "haaaaa" longo descendo, com tremor
+    syl(t,440,190,.85,'a',.9,false);}}
 function honk(){if(!ac)return;const t=ac.currentTime;[0,.22].forEach(d=>{const o=ac.createOscillator();o.type='square';o.frequency.setValueAtTime(380,t+d);o.frequency.exponentialRampToValueAtTime(300,t+d+.18);const g=ac.createGain();g.gain.setValueAtTime(.0001,t+d);g.gain.exponentialRampToValueAtTime(.18,t+d+.02);g.gain.exponentialRampToValueAtTime(.0001,t+d+.2);const f=ac.createBiquadFilter();f.type='bandpass';f.frequency.value=900;o.connect(f).connect(g);out(g,.4);o.start(t+d);o.stop(t+d+.22);});}
 function cymbal(){if(!ac)return;const t=ac.currentTime;const s=ac.createBufferSource();s.buffer=SFX.white||noiseBuf;const hp=ac.createBiquadFilter();hp.type='highpass';hp.frequency.value=3200;const g=ac.createGain();g.gain.setValueAtTime(1.4,t);g.gain.exponentialRampToValueAtTime(.0001,t+2.2);s.connect(hp).connect(g);out(g,.7);s.start(t,0,2.3);
   [523,1247,2793].forEach(f=>{const o=ac.createOscillator();o.type='triangle';o.frequency.value=f;const og=ac.createGain();og.gain.setValueAtTime(.12,t);og.gain.exponentialRampToValueAtTime(.0001,t+1.6);o.connect(og);out(og,.5);o.start(t);o.stop(t+1.7);});crack(1.8);}
