@@ -189,6 +189,7 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
       <button class="mbtn" data-p="ach" type="button"><svg viewBox="0 0 24 24"><path d="M7 4h10v4a5 5 0 0 1-10 0zM12 13v4M8 21h8M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Conquistas</span></button>
       <button class="mbtn" data-p="shop" type="button"><svg viewBox="0 0 24 24"><path d="M5 8h14l-1.2 11H6.2zM9 8V6a3 3 0 0 1 6 0v2" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg><span>Loja</span></button>
       <button class="mbtn" id="mQuit" type="button" hidden style="color:#ff8a7a;border-left-color:rgba(255,90,70,.6)"><svg viewBox="0 0 24 24"><path d="M10 4H5v16h5M14 8l4 4-4 4M18 12H9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Sair do jogo</span></button>
+      <button class="mbtn" data-p="conta" type="button"><svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="2"/></svg><span id="contaLbl">Entrar</span></button>
       <button class="mbtn" data-p="set" type="button"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>Ajustes</span></button>
     </nav>
     <div class="wallet"><span class="coin"></span><span id="walletN">0</span> moedas</div>
@@ -215,9 +216,11 @@ canvas#c{position:fixed;inset:0;width:100%;height:100%;display:block}
   <div class="panel" id="pach" hidden></div>
   <div class="panel" id="pshop" hidden></div>
   <div class="panel" id="pset" hidden></div>
+  <div class="panel" id="pconta" hidden></div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/geometries/DecalGeometry.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/SkeletonUtils.js"></script>
@@ -1692,7 +1695,37 @@ document.getElementById('go').addEventListener('click',()=>{document.getElementB
 const SAVE_KEY='noite-colegio-save-v1';
 const DEF={coins:0,owned:[],equip:{lanterna:'normal'},ach:{},coinsGot:[],stats:{catracas:0},settings:{sens:1,vol:80,qual:'media',fov:68,cam:'3p',grao:true,dicas:true}};
 let SAVE;try{SAVE=Object.assign({},DEF,JSON.parse(localStorage.getItem(SAVE_KEY)||'{}'));SAVE.settings=Object.assign({},DEF.settings,SAVE.settings||{});SAVE.stats=Object.assign({},DEF.stats,SAVE.stats||{});SAVE.equip=Object.assign({},DEF.equip,SAVE.equip||{});}catch(_){SAVE=JSON.parse(JSON.stringify(DEF));}
-function persist(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(SAVE));}catch(_){}}
+function persist(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(SAVE));}catch(_){}try{cloudSave();}catch(_){}}
+/* ---------------- conta (Supabase): login, progresso na nuvem e compras ---------------- */
+const SB_URL='https://tjakswjmcehszfbxvqqx.supabase.co',SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRqYWtzd2ptY2Voc3pmYnh2cXF4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxMzEyMzAsImV4cCI6MjEwODcwNzIzMH0.QdDqy8fmkPANTsluL0FfYi_lQvuj2t2MQQ_KZ-l3I6k';
+let SB=null,ME=null,cloudT=0,PAYWAIT={};
+try{if(window.supabase)SB=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,storageKey:'ndc-auth'}});}catch(e){console.warn('supabase',e);}
+function cloudSave(){if(!SB||!ME||!SAVE)return;clearTimeout(cloudT);cloudT=setTimeout(async()=>{try{await SB.from('profiles').update({coins:SAVE.coins|0,skins:SAVE.skins||[],save:{ach:SAVE.ach,themes:SAVE.themes||{},profSkin:SAVE.profSkin,stats:SAVE.stats},updated_at:new Date().toISOString()}).eq('id',ME.id);}catch(e){console.warn(e);}},1500);}
+async function cloudLoad(){if(!SB||!ME)return;try{const {data:p}=await SB.from('profiles').select('*').eq('id',ME.id).maybeSingle();
+    if(p){SAVE.coins=Math.max(SAVE.coins|0,p.coins|0);SAVE.skins=[...new Set([...(SAVE.skins||[]),...(p.skins||[])])];const sv=p.save||{};SAVE.ach=Object.assign({},sv.ach||{},SAVE.ach||{});if(sv.themes&&!SAVE.themes)SAVE.themes=sv.themes;if(sv.profSkin&&(!SAVE.profSkin||SAVE.profSkin==='professor'))SAVE.profSkin=sv.profSkin;ME.nick=p.nick;}
+    await loadPaid();try{localStorage.setItem(SAVE_KEY,JSON.stringify(SAVE));}catch(_){}cloudSave();money();renderAll();}catch(e){console.warn(e);}}
+async function loadPaid(){if(!SB||!ME)return;const {data}=await SB.from('purchases').select('skin,status').eq('user_id',ME.id).eq('status','paid');PAIDOWN=new Set((data||[]).map(r=>r.skin));for(const k of PAIDOWN)delete PAYWAIT[k];}
+if(SB){SB.auth.onAuthStateChange((ev,ses)=>{const u=ses&&ses.user;const was=ME&&ME.id;ME=u?{id:u.id,email:u.email}:null;if(ME&&ME.id!==was)cloudLoad();if(!ME){PAIDOWN=new Set();}try{renderConta();}catch(e){}});}
+function renderConta(){const p=$('pconta');if(!p)return;const lbl=$('contaLbl');if(lbl)lbl.textContent=ME?'Conta':'Entrar';
+  if(!SB){p.innerHTML='<h2>Conta</h2><p class="sub">Não deu pra conectar ao servidor agora. Verifique a internet e abra o jogo de novo.</p>';return;}
+  if(ME){p.innerHTML='<h2>Conta</h2><p class="sub">Logado como <b>'+(ME.nick||ME.email)+'</b>. Seu progresso (moedas, skins e conquistas) fica salvo na nuvem.</p><div class="set"><label>E-mail<small>'+ME.email+'</small></label><button class="pill" id="cOut" type="button">Sair</button></div><p class="sub" id="cMsg"></p>';
+    $('cOut').onclick=async()=>{await SB.auth.signOut();};return;}
+  p.innerHTML='<h2>Entrar</h2><p class="sub">Crie uma conta pra salvar seu progresso e comprar skins.</p>'+
+   '<div class="cform"><input id="cMail" type="email" placeholder="E-mail" autocomplete="email"><input id="cPass" type="password" placeholder="Senha (6+ letras)" autocomplete="current-password"><input id="cNick" type="text" placeholder="Apelido (só pra criar conta)" maxlength="20">'+
+   '<div class="cbtns"><button class="buy" id="cIn" type="button">Entrar</button><button class="buy" id="cNew" type="button">Criar conta</button></div><p class="sub" id="cMsg"></p></div>';
+  const msg=t=>{$('cMsg').textContent=t;};
+  $('cIn').onclick=async()=>{msg('Entrando…');const {error}=await SB.auth.signInWithPassword({email:$('cMail').value.trim(),password:$('cPass').value});msg(error?('Não deu: '+traduz(error.message)):'');};
+  $('cNew').onclick=async()=>{const pw=$('cPass').value;if(pw.length<6){msg('A senha precisa ter pelo menos 6 letras.');return;}msg('Criando…');const {data,error}=await SB.auth.signUp({email:$('cMail').value.trim(),password:pw,options:{data:{nick:$('cNick').value.trim()}}});
+    if(error){msg('Não deu: '+traduz(error.message));return;}msg(data.session?'Conta criada!':'Conta criada! Confirme no e-mail que chegou e depois toque em Entrar.');};
+  p.querySelectorAll('input').forEach(i=>{i.addEventListener('keydown',e=>e.stopPropagation());});}
+function traduz(m){m=String(m||'');if(/Invalid login/i.test(m))return 'e-mail ou senha errados.';if(/already registered/i.test(m))return 'esse e-mail já tem conta.';if(/Email not confirmed/i.test(m))return 'confirme o e-mail antes.';if(/rate limit/i.test(m))return 'muitas tentativas, espere um pouco.';return m;}
+document.head.insertAdjacentHTML('beforeend','<style>.cform{display:flex;flex-direction:column;gap:10px;max-width:340px}.cform input{font:500 15px var(--f-body);padding:11px 12px;background:#0d0f15;color:#f2ead6;border:1px solid rgba(242,234,214,.2);border-radius:8px}.cbtns{display:flex;gap:10px}.cbtns .buy{flex:1;padding:11px}</style>');
+async function payBuy(id,btn){if(!SB){alertish('Sem conexão com o servidor.');return;}if(!ME){closePanels();$('pconta').hidden=false;$('pClose').hidden=false;renderConta();const m=$('cMsg');if(m)m.textContent='Entre na sua conta pra comprar a skin.';return;}
+  if(PAYWAIT[id]){btn.textContent='Verificando…';await loadPaid();renderShop();renderChars();if(PAIDOWN.has(id)){SAVE.profSkin=id;persist();try{if(PROF.ready)applyChar(PROF.v,id);}catch(e){}}else{btn.textContent='Ainda não caiu · verificar';}return;}
+  btn.textContent='Abrindo pagamento…';try{const {data:{session}}=await SB.auth.getSession();const r=await fetch(SB_URL+'/functions/v1/asaas-checkout',{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_KEY,Authorization:'Bearer '+session.access_token},body:JSON.stringify({skin:id})});const j=await r.json();
+    if(j.status==='paid'){await loadPaid();renderShop();renderChars();return;}if(!j.url){btn.textContent=j.error||'Não deu agora';return;}
+    PAYWAIT[id]=1;window.open(j.url,'_blank');renderShop();let n=0;const iv=setInterval(async()=>{n++;await loadPaid();if(PAIDOWN.has(id)||n>40){clearInterval(iv);renderShop();renderChars();if(PAIDOWN.has(id)){SAVE.profSkin=id;persist();try{if(PROF.ready)applyChar(PROF.v,id);}catch(e){}}}},6000);}catch(e){btn.textContent='Erro: '+e.message;}}
+function alertish(t){try{hint(t,2.5);}catch(e){}}
 const SET=SAVE.settings;
 const ACH=[
  ['entrar','Boa noite, colégio','Entrar pela portaria.','facil'],
@@ -1732,7 +1765,8 @@ function renderAch(){const n=ACH.filter(a=>SAVE.ach[a[0]]).length;
   ACH.map((a,i)=>'<div class="ach'+(SAVE.ach[a[0]]?' done':'')+'"><div class="ic">'+(SAVE.ach[a[0]]?'✓':String(i+1).padStart(2,'0'))+'</div><div><b>'+a[1]+'</b><small>'+a[2]+'</small></div><div class="rw" style="color:'+TIER[a[3]][1]+';font-weight:700;letter-spacing:.06em;font-size:11px;text-transform:uppercase">'+TIER[a[3]][0]+'</div></div>').join('');}
 function renderShop(){makeSkinPics();
  $('pshop').innerHTML='<h2>Loja</h2><p class="sub">Você tem <span class="coin"></span>'+SAVE.coins+' moedas. Ache moedas no colégio pra comprar.</p><div class="chars">'+PCH.filter(c=>c[0]!=='professor').map(c=>{const has=charOwned(c[0]);
-   return '<div class="chr'+(has?' on':'')+'" style="cursor:default"><div class="pic" style="background:#15171d '+(SKPIC&&SKPIC[c[0]]?'url(\''+SKPIC[c[0]]+'\') center/cover no-repeat':'')+'"></div><b>'+c[1]+'</b><small>'+c[2]+'</small>'+(has?'<span class="tag">Já é seu</span>':'<button class="buy" data-bsk="'+c[0]+'" '+(SAVE.coins<c[3]?'disabled':'')+' type="button"><span class="coin"></span>'+c[3]+'</button>')+'</div>';}).join('')+'</div>';
+   return '<div class="chr'+(has?' on':'')+'" style="cursor:default"><div class="pic" style="background:#15171d '+(SKPIC&&SKPIC[c[0]]?'url(\''+SKPIC[c[0]]+'\') center/cover no-repeat':'')+'"></div><b>'+c[1]+'</b><small>'+c[2]+'</small>'+(has?'<span class="tag">Já é seu</span>':PAIDSK[c[0]]?'<button class="buy" data-pay="'+c[0]+'" type="button" style="border-color:#5fd06a;color:#9ff0a8">💳 '+PAIDSK[c[0]]+(PAYWAIT[c[0]]?' · verificar':'')+'</button>':'<button class="buy" data-bsk="'+c[0]+'" '+(SAVE.coins<c[3]?'disabled':'')+' type="button"><span class="coin"></span>'+c[3]+'</button>')+'</div>';}).join('')+'</div>';
+ $('pshop').querySelectorAll('[data-pay]').forEach(b=>b.onclick=()=>payBuy(b.dataset.pay,b));
  $('pshop').querySelectorAll('[data-bsk]').forEach(b=>b.onclick=()=>{const id=b.dataset.bsk,c=PCH.find(x=>x[0]===id);if(SAVE.coins<c[3])return;SAVE.coins-=c[3];SAVE.skins=(SAVE.skins||[]).concat(id);SAVE.profSkin=id;persist();money();renderShop();renderChars();try{if(PROF.ready)applyChar(PROF.v,id);}catch(e){}});
  if(0)$('pshop').innerHTML='<h2>Loja</h2><p class="sub">Você tem <span class="coin"></span>'+SAVE.coins+' moedas. Ganhe mais com conquistas e achando moedas no colégio.</p><div class="shop">'+
   SHOP.map(s=>{const own=SAVE.owned.includes(s[0]);const eq=s[4]==='lanterna'?SAVE.equip.lanterna===s[0]:(own&&SAVE.equip[s[0]]!==false);
@@ -1760,22 +1794,23 @@ const CHARS=[['aluno','Aluno','O personagem padrão. Uniforme branco com detalhe
 const alunoPic='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 100"><rect width="60" height="100" fill="#e9e7e2"/><circle cx="30" cy="16" r="8" fill="#b98058"/><path d="M22 12a8 8 0 0 1 16 0z" fill="#17110d"/><rect x="18" y="26" width="24" height="28" rx="3" fill="#f2f2ee" stroke="#ccc"/><rect x="18" y="28" width="24" height="3" fill="#e8b81c"/><rect x="11" y="27" width="7" height="24" rx="3" fill="#b98058"/><rect x="42" y="27" width="7" height="24" rx="3" fill="#b98058"/><rect x="20" y="54" width="9" height="38" fill="#1b2740"/><rect x="31" y="54" width="9" height="38" fill="#1b2740"/><rect x="19" y="91" width="11" height="5" fill="#111"/><rect x="30" y="91" width="11" height="5" fill="#111"/></svg>');
 const PCH=[
  ['professor','Professor','O de sempre. Apito no pescoço.',0,{}],
- ['sorriso','Sorriso','',50,{skin:0x9a92a4,w:'apito'}],
+ ['sorriso','Sorriso','',500,{skin:0x9a92a4,w:'apito'}],
  ['fogo','Professor em Chamas','Habilidade: brilha e pega fogo de verdade, iluminando o corredor.',100,{skin:0xff8a30,fire:1,w:'apito'}],
- ['ouro','Estátua de Ouro','Habilidade: deixa pegadas de ouro por onde anda.',250,{skin:0xe0b048,gold:1,w:'apito'}],
- ['chefao','O Milionário','Habilidade: jogando com ele, cada moeda vale 2.',250,{skin:0x9a6a52,sun:1,coat:1,w:'bengala'}],
+ ['ouro','Estátua de Ouro','Habilidade: deixa pegadas de ouro por onde anda.',0,{skin:0xe0b048,gold:1,w:'apito'}],
+ ['chefao','O Milionário','Habilidade: jogando com ele, cada moeda vale 2.',0,{skin:0x9a6a52,sun:1,coat:1,w:'bengala'}],
  ['fazendeiro','Espantalho','',50,{skin:0x4a3e44,hat:'palha',w:'enxada'}],
  ['coelho','Coelho Macabro','',50,{skin:0x8a8074,ears:1,beard:1,w:'cenoura'}],
- ['noel','Noel Sombrio','',50,{skin:0x8a8480,hat:'noel',beard:1,w:'doce'}],
- ['bruxa','Bruxa','',50,{skin:0x8c8c8a,hat:'bruxa',dress:1,w:'vassoura'}],
+ ['noel','Noel Sombrio','',500,{skin:0x8a8480,hat:'noel',beard:1,w:'doce'}],
+ ['bruxa','Bruxa','',500,{skin:0x8c8c8a,hat:'bruxa',dress:1,w:'vassoura'}],
  ['punk','Metaleiro','Habilidade: em vez do apito, toca um acorde de guitarra.',250,{skin:0x9c9892,spikes:1,w:'guitarra'}],
- ['palhaco','Palhaço','',100,{skin:0x9a6a52,clown:1,w:'balao'}],
+ ['palhaco','Palhaço','',0,{skin:0x9a6a52,clown:1,w:'balao'}],
  ['acougueiro','Açougueiro','',100,{skin:0xb0ae9e,apron:1,w:'cutelo'}]];
 function guitarChord(dur,vol){if(!ac)return;const t=ac.currentTime;const ln=Math.max(.9,Math.min(2.4,dur*1.6));const ws=ac.createWaveShaper();const cv=new Float32Array(1024);for(let i=0;i<1024;i++){const x=i/512-1;cv[i]=Math.tanh(x*9);}ws.curve=cv;
   const pre=ac.createGain();pre.gain.value=.9;const g=ac.createGain();g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(Math.min(.5,vol*2.4),t+.012);g.gain.exponentialRampToValueAtTime(.0001,t+ln);const lp=ac.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2600;
   [82.4,123.5,164.8].forEach((f,i)=>{[0,.006].forEach(d=>{const o=ac.createOscillator();o.type='sawtooth';o.frequency.value=f*(1+d);o.connect(pre);o.start(t+i*.008);o.stop(t+ln+.05);});});pre.connect(ws).connect(lp).connect(g);out(g,.6);}
 const ALL_FREE=false;// por enquanto todas liberadas
-function charOwned(id){return ALL_FREE||id==='professor'||(SAVE.skins||[]).includes(id);}
+const PAIDSK={ouro:'R$ 9,90',chefao:'R$ 9,90',palhaco:'R$ 9,90'};let PAIDOWN=new Set();
+function charOwned(id){if(ALL_FREE||id==='professor')return true;if(PAIDSK[id])return PAIDOWN.has(id);return (SAVE.skins||[]).includes(id);}
 // ---------- materiais e texturas ----------
 const CHT={};function chTex(id,srgb=true){if(CHT[id])return CHT[id];const el=document.getElementById(id);if(!el||!el.textContent.trim())return null;CHT[id]=b64tex(id,'image/jpeg',srgb);return CHT[id];}
 function charFace(img){const W=312,Hh=420,t=document.createElement('canvas');t.width=W;t.height=Hh;const g=t.getContext('2d');g.drawImage(img,0,0,W,Hh);
@@ -2076,7 +2111,7 @@ function makeSkinPics(){try{if(!PROF.ready)return;}catch(e){return;}if(SKPIC||SK
 window.__charPic=id=>SKPIC&&SKPIC[id];window.__charRedo=()=>{SKPIC=null;makeSkinPics();};
 function renderChars(){makeSkinPics();const cur=charOwned(SAVE.profSkin||'professor')?(SAVE.profSkin||'professor'):'professor';
  $('pchars').innerHTML='<h2>Personagem</h2><p class="sub">Quem vai te caçar no colégio. Compre novos na Loja com moedas.</p><div class="chars">'+PCH.map(c=>{const op=charOwned(c[0]),on=cur===c[0];
-   const tag=on?'Usando':op?'Usar':'🔒 Loja · '+c[3]+' moedas';
+   const tag=on?'Usando':op?'Usar':PAIDSK[c[0]]?'💳 Loja · '+PAIDSK[c[0]]:'🔒 Loja · '+c[3]+' moedas';
    return '<button class="chr'+(on?' on':'')+'" data-sk="'+c[0]+'" type="button"><div class="pic" style="background:#15171d '+(SKPIC&&SKPIC[c[0]]?'url(\''+SKPIC[c[0]]+'\') center/cover no-repeat':'')+';filter:'+(op?'none':'grayscale(.7) brightness(.45)')+'"></div><span class="tag"'+(op?'':' style="color:#e0403a"')+'>'+tag+'</span><b>'+c[1]+'</b><small>'+c[2]+'</small>'+(THEMES[c[0]]&&op?'<span class="thb'+(themeOn(c[0])?' on':'')+'" data-th="'+c[0]+'">'+THEMES[c[0]][1]+' Mapa '+THEMES[c[0]][2]+': '+(themeOn(c[0])?'ligado':'desligado')+'</span>':'')+'</button>';}).join('')+'</div>'+(started?'<p class="sub" style="color:#ff8a7a;margin-top:12px">Durante a partida não dá pra trocar. Volte ao menu inicial.</p>':'');
  const lockT=()=>{if(started){if(window.hint)hint('Só dá pra trocar de personagem antes de começar a partida.',2.5);return true;}return false;};
  $('pchars').querySelectorAll('[data-th]').forEach(b=>b.onclick=e=>{e.stopPropagation();if(lockT())return;const id=b.dataset.th;const on=!themeOn(id);SAVE.themes={};if(on){SAVE.themes[id]=true;SAVE.profSkin=id;try{if(PROF.ready)applyChar(PROF.v,id);}catch(e){}}persist();renderChars();});
@@ -2154,9 +2189,9 @@ function updateMeta(dt,z){
  if(z==='Área do infantil'&&P.pos.z<-30)unlock('infantil');}
 function coinSound(){const t=ac.currentTime;[988,1319].forEach((f,i)=>{const o=ac.createOscillator();o.type='square';o.frequency.value=f;const g=ac.createGain();g.gain.setValueAtTime(.05,t+i*.07);g.gain.exponentialRampToValueAtTime(.0001,t+i*.07+.18);o.connect(g).connect(master||ac.destination);o.start(t+i*.07);o.stop(t+i*.07+.2);});}
 // navegação do menu
-function closePanels(){document.querySelectorAll('.mbtn').forEach(x=>x.classList.remove('on'));['pPlay','pDiff','pchars','pach','pshop','pset'].forEach(id=>$(id).hidden=true);$('pClose').hidden=true;}
+function closePanels(){document.querySelectorAll('.mbtn').forEach(x=>x.classList.remove('on'));['pPlay','pDiff','pchars','pach','pshop','pset','pconta'].forEach(id=>$(id).hidden=true);$('pClose').hidden=true;}
 $('pClose').onclick=closePanels;
-document.querySelectorAll('.mbtn[data-p]').forEach(b=>b.onclick=()=>{if(b.dataset.p==='chars')renderChars();if(b.dataset.p==='shop')renderShop();const was=b.classList.contains('on');closePanels();if(was)return;b.classList.add('on');$('p'+b.dataset.p).hidden=false;$('pClose').hidden=false;});
+document.querySelectorAll('.mbtn[data-p]').forEach(b=>b.onclick=()=>{if(b.dataset.p==='chars')renderChars();if(b.dataset.p==='shop')renderShop();if(b.dataset.p==='conta')renderConta();const was=b.classList.contains('on');closePanels();if(was)return;b.classList.add('on');$('p'+b.dataset.p).hidden=false;$('pClose').hidden=false;});
 $('mPlay').onclick=()=>{if(paused){closePanels();$('go').click();return;}closePanels();$('pDiff').hidden=false;$('pClose').hidden=false;};
 document.querySelectorAll('#pDiff .dif').forEach(b=>b.onclick=()=>{window.DIFF_ID=b.dataset.d;try{localStorage.setItem('ndc-diff',b.dataset.d);}catch(_){}closePanels();$('go').click();});
 try{const d=localStorage.getItem('ndc-diff');if(d){const b=document.querySelector('#pDiff .dif[data-d="'+d+'"]');if(b)b.classList.add('last');}}catch(_){}
