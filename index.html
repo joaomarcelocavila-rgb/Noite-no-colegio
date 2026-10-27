@@ -1874,7 +1874,9 @@ function fireDraw(t){const F=FIRE;if(!F)return;const g=F.g;g.globalCompositeOper
 const GSTEPS=[];let gstepT=0;
 function goldStep(v){const fm=new THREE.MeshStandardMaterial({color:0xe8b84a,roughness:.25,metalness:.9,emissive:0x5a3a08,transparent:true,opacity:.95,depthWrite:false});const st=new THREE.Mesh(new THREE.CircleGeometry(.07,12),fm);st.scale.set(.75,1.5,1);st.rotation.x=-Math.PI/2;st.rotation.z=-PROF.yaw;
   const side=(GSTEPS.length%2?1:-1)*.12;st.position.set(PROF.pos.x+Math.cos(PROF.yaw)*side,PROF.pos.y+.013,PROF.pos.z-Math.sin(PROF.yaw)*side);scene.add(st);GSTEPS.push({m:st,t:0});if(GSTEPS.length>60){const o=GSTEPS.shift();scene.remove(o.m);}}
+let clownT=8;
 function charTick(v,dt){if(!v)return;
+  if(v.charId==='palhaco'&&PROF.active&&PROF.root.visible&&!PROF.dead&&!MX.dead&&!MX.won&&started){clownT-=dt;if(clownT<=0){clownT=12+Math.random()*12;const d=Math.hypot(P.pos.x-PROF.pos.x,P.pos.z-PROF.pos.z)+Math.abs(P.y-PROF.pos.y)*2;if(d<30)clownLaugh(.42*Math.max(.12,1-d/30),6+((Math.random()*3)|0));}}
   if(v.charId==='ouro'&&PROF.active&&PROF.root.visible&&!PROF.dead){const mv=PROF.__lp?Math.hypot(PROF.pos.x-PROF.__lp.x,PROF.pos.z-PROF.__lp.z):0;PROF.__lp=PROF.pos.clone();gstepT+=mv;if(gstepT>.65){gstepT=0;goldStep(v);}}
   for(const g of GSTEPS){g.t+=dt;if(g.t>25)g.m.material.opacity=Math.max(0,.95-(g.t-25)/5);}
   if(v.weapon){const h=v.rHand,f=v.rFing;v.root.updateMatrixWorld(true);const hp=h.getWorldPosition(new THREE.Vector3()),fp=f.getWorldPosition(new THREE.Vector3());const fore=v.rFore.getWorldPosition(new THREE.Vector3());
@@ -1909,6 +1911,15 @@ function reindeer(){const g=new THREE.Group();const fur=stdM(0x4a3020,.9),dark=s
   const legs=[];[[-.15,.4],[.15,.4],[-.15,-.42],[.15,-.42]].forEach(([x,z])=>{const l=new THREE.Group();l.position.set(x,.9,z);const m=new THREE.Mesh(new THREE.CylinderGeometry(.035,.03,.9,6),dark);m.position.y=-.45;l.add(m);g.add(l);legs.push(l);});
   g.userData={legs,head};g.traverse(o=>{if(o.isMesh)o.castShadow=true;});return g;}
 // gore: corta um membro, joga o pedaço no chão e deixa o sangue jorrando
+// risada de palhaço sintetizada (vários "HA" descendo de tom, meio maníaca)
+function clownLaugh(vol=.3,n=7){if(!ac)return;const t0=ac.currentTime;const base=230+Math.random()*40;
+  for(let i=0;i<n;i++){const t=t0+i*.17+(Math.random()*.03);const f0=base*(1.18-i*.045)*(i===0?1.15:1);const dur=.13+(i===n-1?.25:0);
+    const o=ac.createOscillator();o.type='sawtooth';o.frequency.setValueAtTime(f0*1.08,t);o.frequency.exponentialRampToValueAtTime(f0*.86,t+dur);
+    const vib=ac.createOscillator();vib.frequency.value=7;const vg=ac.createGain();vg.gain.value=f0*.03;vib.connect(vg).connect(o.frequency);
+    const g=ac.createGain();g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+.018);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+    const sum=ac.createGain();[[780,7,1],[1230,8,.7],[2600,10,.35]].forEach(([fc,q,a])=>{const bp=ac.createBiquadFilter();bp.type='bandpass';bp.frequency.value=fc;bp.Q.value=q;const ga=ac.createGain();ga.gain.value=a*4;o.connect(bp).connect(ga).connect(sum);});
+    sum.connect(g);out(g,.55);o.start(t);o.stop(t+dur+.02);vib.start(t);vib.stop(t+dur+.02);
+    const h=ac.createBufferSource();h.buffer=noiseBuf;const hf=ac.createBiquadFilter();hf.type='bandpass';hf.frequency.value=1600;const hg=ac.createGain();hg.gain.setValueAtTime(vol*.5,t);hg.gain.exponentialRampToValueAtTime(.0001,t+.04);h.connect(hf).connect(hg);out(hg,.4);h.start(t,Math.random(),.05);}}
 function honk(){if(!ac)return;const t=ac.currentTime;[0,.22].forEach(d=>{const o=ac.createOscillator();o.type='square';o.frequency.setValueAtTime(380,t+d);o.frequency.exponentialRampToValueAtTime(300,t+d+.18);const g=ac.createGain();g.gain.setValueAtTime(.0001,t+d);g.gain.exponentialRampToValueAtTime(.18,t+d+.02);g.gain.exponentialRampToValueAtTime(.0001,t+d+.2);const f=ac.createBiquadFilter();f.type='bandpass';f.frequency.value=900;o.connect(f).connect(g);out(g,.4);o.start(t+d);o.stop(t+d+.22);});}
 function cymbal(){if(!ac)return;const t=ac.currentTime;const s=ac.createBufferSource();s.buffer=SFX.white||noiseBuf;const hp=ac.createBiquadFilter();hp.type='highpass';hp.frequency.value=3200;const g=ac.createGain();g.gain.setValueAtTime(1.4,t);g.gain.exponentialRampToValueAtTime(.0001,t+2.2);s.connect(hp).connect(g);out(g,.7);s.start(t,0,2.3);
   [523,1247,2793].forEach(f=>{const o=ac.createOscillator();o.type='triangle';o.frequency.value=f;const og=ac.createGain();og.gain.setValueAtTime(.12,t);og.gain.exponentialRampToValueAtTime(.0001,t+1.6);o.connect(og);out(og,.5);o.start(t);o.stop(t+1.7);});crack(1.8);}
@@ -1989,7 +2000,7 @@ function updateCine(dt,t){const C=KS.cine,v=PROF.v,kid=C.kid;
     if(!C.pop){const g=new THREE.Group();const cup=new THREE.Mesh(new THREE.CylinderGeometry(.09,.065,.2,16,1,true),new THREE.MeshStandardMaterial({side:THREE.DoubleSide,map:stripeTex('#f4f0e6','#c41818',6,0),roughness:.6}));g.add(cup);
       for(let i=0;i<34;i++){const p=new THREE.Mesh(new THREE.SphereGeometry(.018+Math.random()*.01,6,5),stdM(0xf6e6a8,.8));p.position.set((Math.random()-.5)*.14,.1+Math.random()*.06,(Math.random()-.5)*.14);g.add(p);}ckAdd(g);C.pop=g;g.visible=false;}
     if(t>.7&&t<2.5){const hp=v.rHand.getWorldPosition(new THREE.Vector3());const tgt=kp.clone().add(new THREE.Vector3(0,1.0,0)).addScaledVector(KS.dir,-.22);C.pop.visible=true;C.pop.position.copy(hp.lerp(tgt,sm(.8,1.6,t)));}
-    hitAt(1.7,()=>{honk();});
+    hitAt(.3,()=>{clownLaugh(.4,6);});hitAt(1.7,()=>{honk();});hitAt(3.0,()=>{clownLaugh(.5,9);});
     // dois pratos dos lados da cabeça
     if(!C.cym&&t>1.9){C.cym=[-1,1].map(sd=>{const m=new THREE.Mesh(new THREE.CylinderGeometry(.2,.2,.012,26),new THREE.MeshStandardMaterial({color:0xd8a838,roughness:.2,metalness:.95}));m.material.color.convertSRGBToLinear();const b=new THREE.Mesh(new THREE.SphereGeometry(.03,8,6),m.material);b.position.y=.012;m.add(b);ckAdd(m);return {m,sd};});}
     if(C.cym){const head=kid?kid.c.getObjectByName('Bip02_Head').getWorldPosition(new THREE.Vector3()):kp.clone().add(new THREE.Vector3(0,1.55,0));
@@ -2673,7 +2684,7 @@ function scream(vol=1,dur=1.4,pitch=1){if(!ac)return;const t=ac.currentTime;cons
   [[1100,4,1],[1650,5,.8],[2900,7,.55],[3800,8,.3]].forEach(([fc,q,a])=>{const bp=ac.createBiquadFilter();bp.type='bandpass';bp.frequency.setValueAtTime(fc*.9,t);bp.frequency.linearRampToValueAtTime(fc*1.05,t+dur*.3);bp.Q.value=q;const ga=ac.createGain();ga.gain.value=a*1.8;rough.connect(bp).connect(ga).connect(pre);});
   if(SFX.white){const nz=ac.createBufferSource();nz.buffer=SFX.white;const hp=ac.createBiquadFilter();hp.type='bandpass';hp.frequency.value=3200;hp.Q.value=.7;const ng=ac.createGain();ng.gain.setValueAtTime(.5,t);ng.gain.exponentialRampToValueAtTime(.12,t+dur);nz.connect(hp).connect(ng).connect(pre);nz.start(t,Math.random(),dur);}}
 function farScream(){if(!ac)return;const t=ac.currentTime;scream(.45,1.8,.9);const d=ac.createDelay(1);d.delayTime.value=.33;}
-window.__apito=function(dur,vol=.22){if(!ac)return;try{if(PROF.v&&PROF.v.charId==='punk'){guitarChord(dur,vol);return;}}catch(e){}try{const now=ac.currentTime;const g=ac.createGain();g.gain.setValueAtTime(0,now);g.gain.linearRampToValueAtTime(vol,now+.02);g.gain.setValueAtTime(vol,now+dur-.05);g.gain.linearRampToValueAtTime(0,now+dur);g.connect(master);
+window.__apito=function(dur,vol=.22){if(!ac)return;try{if(PROF.v&&PROF.v.charId==='punk'){guitarChord(dur,vol);return;}if(PROF.v&&PROF.v.charId==='palhaco'){clownLaugh(Math.min(.45,vol*1.6),dur>.8?8:5);return;}}catch(e){}try{const now=ac.currentTime;const g=ac.createGain();g.gain.setValueAtTime(0,now);g.gain.linearRampToValueAtTime(vol,now+.02);g.gain.setValueAtTime(vol,now+dur-.05);g.gain.linearRampToValueAtTime(0,now+dur);g.connect(master);
   const trem=ac.createGain();trem.gain.value=.6;trem.connect(g);const lfo=ac.createOscillator();lfo.frequency.value=38;const lg=ac.createGain();lg.gain.value=.4;lfo.connect(lg);lg.connect(trem.gain);
   [[2850,'sine',1],[3250,'sine',.6],[5700,'triangle',.12]].forEach(([f,tp,v])=>{const o=ac.createOscillator();o.type=tp;o.frequency.setValueAtTime(f,now);const og=ac.createGain();og.gain.value=v;o.connect(og);og.connect(trem);o.start(now);o.stop(now+dur+.05);});
   lfo.start(now);lfo.stop(now+dur+.05);}catch(e){}};
