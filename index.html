@@ -1769,8 +1769,8 @@ const PCH=[
  ['noel','Noel Sombrio','',50,{skin:0x8a8480,hat:'noel',beard:1,w:'doce'}],
  ['bruxa','Bruxa','',50,{skin:0x8c8c8a,hat:'bruxa',dress:1,w:'vassoura'}],
  ['punk','Metaleiro','Habilidade: em vez do apito, toca um acorde de guitarra.',250,{skin:0x9c9892,spikes:1,w:'guitarra'}],
- ['palhaco','Palhaço','',50,{skin:0x9a6a52,clown:1,w:'balao'}],
- ['acougueiro','Açougueiro','',50,{skin:0xb0ae9e,apron:1,w:'cutelo'}]];
+ ['palhaco','Palhaço','',100,{skin:0x9a6a52,clown:1,w:'balao'}],
+ ['acougueiro','Açougueiro','',100,{skin:0xb0ae9e,apron:1,w:'cutelo'}]];
 function guitarChord(dur,vol){if(!ac)return;const t=ac.currentTime;const ln=Math.max(.9,Math.min(2.4,dur*1.6));const ws=ac.createWaveShaper();const cv=new Float32Array(1024);for(let i=0;i<1024;i++){const x=i/512-1;cv[i]=Math.tanh(x*9);}ws.curve=cv;
   const pre=ac.createGain();pre.gain.value=.9;const g=ac.createGain();g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(Math.min(.5,vol*2.4),t+.012);g.gain.exponentialRampToValueAtTime(.0001,t+ln);const lp=ac.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2600;
   [82.4,123.5,164.8].forEach((f,i)=>{[0,.006].forEach(d=>{const o=ac.createOscillator();o.type='sawtooth';o.frequency.value=f*(1+d);o.connect(pre);o.start(t+i*.008);o.stop(t+ln+.05);});});pre.connect(ws).connect(lp).connect(g);out(g,.6);}
