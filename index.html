@@ -1731,7 +1731,7 @@ function renderAch(){const n=ACH.filter(a=>SAVE.ach[a[0]]).length;
  $('pach').innerHTML='<h2>Conquistas</h2><p class="sub">'+n+' de '+ACH.length+' desbloqueadas.</p><div class="bar"><i style="width:'+(n/ACH.length*100)+'%"></i></div>'+
   ACH.map((a,i)=>'<div class="ach'+(SAVE.ach[a[0]]?' done':'')+'"><div class="ic">'+(SAVE.ach[a[0]]?'✓':String(i+1).padStart(2,'0'))+'</div><div><b>'+a[1]+'</b><small>'+a[2]+'</small></div><div class="rw" style="color:'+TIER[a[3]][1]+';font-weight:700;letter-spacing:.06em;font-size:11px;text-transform:uppercase">'+TIER[a[3]][0]+'</div></div>').join('');}
 function renderShop(){makeSkinPics();
- $('pshop').innerHTML='<h2>Loja</h2><p class="sub">Você tem <span class="coin"></span>'+SAVE.coins+' moedas. Cada personagem custa 600. Ache moedas no colégio.</p><div class="chars">'+PCH.filter(c=>c[0]!=='professor').map(c=>{const has=charOwned(c[0]);
+ $('pshop').innerHTML='<h2>Loja</h2><p class="sub">Você tem <span class="coin"></span>'+SAVE.coins+' moedas. Ache moedas no colégio pra comprar.</p><div class="chars">'+PCH.filter(c=>c[0]!=='professor').map(c=>{const has=charOwned(c[0]);
    return '<div class="chr'+(has?' on':'')+'" style="cursor:default"><div class="pic" style="background:#15171d '+(SKPIC&&SKPIC[c[0]]?'url(\''+SKPIC[c[0]]+'\') center/cover no-repeat':'')+'"></div><b>'+c[1]+'</b><small>'+c[2]+'</small>'+(has?'<span class="tag">Já é seu</span>':'<button class="buy" data-bsk="'+c[0]+'" '+(SAVE.coins<c[3]?'disabled':'')+' type="button"><span class="coin"></span>'+c[3]+'</button>')+'</div>';}).join('')+'</div>';
  $('pshop').querySelectorAll('[data-bsk]').forEach(b=>b.onclick=()=>{const id=b.dataset.bsk,c=PCH.find(x=>x[0]===id);if(SAVE.coins<c[3])return;SAVE.coins-=c[3];SAVE.skins=(SAVE.skins||[]).concat(id);SAVE.profSkin=id;persist();money();renderShop();renderChars();try{if(PROF.ready)applyChar(PROF.v,id);}catch(e){}});
  if(0)$('pshop').innerHTML='<h2>Loja</h2><p class="sub">Você tem <span class="coin"></span>'+SAVE.coins+' moedas. Ganhe mais com conquistas e achando moedas no colégio.</p><div class="shop">'+
@@ -1760,21 +1760,21 @@ const CHARS=[['aluno','Aluno','O personagem padrão. Uniforme branco com detalhe
 const alunoPic='data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 100"><rect width="60" height="100" fill="#e9e7e2"/><circle cx="30" cy="16" r="8" fill="#b98058"/><path d="M22 12a8 8 0 0 1 16 0z" fill="#17110d"/><rect x="18" y="26" width="24" height="28" rx="3" fill="#f2f2ee" stroke="#ccc"/><rect x="18" y="28" width="24" height="3" fill="#e8b81c"/><rect x="11" y="27" width="7" height="24" rx="3" fill="#b98058"/><rect x="42" y="27" width="7" height="24" rx="3" fill="#b98058"/><rect x="20" y="54" width="9" height="38" fill="#1b2740"/><rect x="31" y="54" width="9" height="38" fill="#1b2740"/><rect x="19" y="91" width="11" height="5" fill="#111"/><rect x="30" y="91" width="11" height="5" fill="#111"/></svg>');
 const PCH=[
  ['professor','Professor','O de sempre. Apito no pescoço.',0,{}],
- ['sorriso','Sorriso','',600,{skin:0x9a92a4,w:'apito'}],
- ['fogo','Professor em Chamas','Habilidade: brilha e pega fogo de verdade, iluminando o corredor.',600,{skin:0xff8a30,fire:1,w:'apito'}],
- ['ouro','Estátua de Ouro','Habilidade: deixa pegadas de ouro por onde anda.',600,{skin:0xe0b048,gold:1,w:'apito'}],
- ['chefao','O Milionário','Habilidade: jogando com ele, cada moeda vale 2.',600,{skin:0x9a6a52,sun:1,coat:1,w:'bengala'}],
- ['fazendeiro','Espantalho','',600,{skin:0x4a3e44,hat:'palha',w:'enxada'}],
- ['coelho','Coelho Macabro','',600,{skin:0x8a8074,ears:1,beard:1,w:'cenoura'}],
- ['noel','Noel Sombrio','',600,{skin:0x8a8480,hat:'noel',beard:1,w:'doce'}],
- ['bruxa','Bruxa','',600,{skin:0x8c8c8a,hat:'bruxa',dress:1,w:'vassoura'}],
- ['punk','Metaleiro','Habilidade: em vez do apito, toca um acorde de guitarra.',600,{skin:0x9c9892,spikes:1,w:'guitarra'}],
- ['palhaco','Palhaço','',600,{skin:0x9a6a52,clown:1,w:'balao'}],
- ['acougueiro','Açougueiro','',600,{skin:0xb0ae9e,apron:1,w:'cutelo'}]];
+ ['sorriso','Sorriso','',50,{skin:0x9a92a4,w:'apito'}],
+ ['fogo','Professor em Chamas','Habilidade: brilha e pega fogo de verdade, iluminando o corredor.',100,{skin:0xff8a30,fire:1,w:'apito'}],
+ ['ouro','Estátua de Ouro','Habilidade: deixa pegadas de ouro por onde anda.',250,{skin:0xe0b048,gold:1,w:'apito'}],
+ ['chefao','O Milionário','Habilidade: jogando com ele, cada moeda vale 2.',250,{skin:0x9a6a52,sun:1,coat:1,w:'bengala'}],
+ ['fazendeiro','Espantalho','',50,{skin:0x4a3e44,hat:'palha',w:'enxada'}],
+ ['coelho','Coelho Macabro','',50,{skin:0x8a8074,ears:1,beard:1,w:'cenoura'}],
+ ['noel','Noel Sombrio','',50,{skin:0x8a8480,hat:'noel',beard:1,w:'doce'}],
+ ['bruxa','Bruxa','',50,{skin:0x8c8c8a,hat:'bruxa',dress:1,w:'vassoura'}],
+ ['punk','Metaleiro','Habilidade: em vez do apito, toca um acorde de guitarra.',250,{skin:0x9c9892,spikes:1,w:'guitarra'}],
+ ['palhaco','Palhaço','',50,{skin:0x9a6a52,clown:1,w:'balao'}],
+ ['acougueiro','Açougueiro','',50,{skin:0xb0ae9e,apron:1,w:'cutelo'}]];
 function guitarChord(dur,vol){if(!ac)return;const t=ac.currentTime;const ln=Math.max(.9,Math.min(2.4,dur*1.6));const ws=ac.createWaveShaper();const cv=new Float32Array(1024);for(let i=0;i<1024;i++){const x=i/512-1;cv[i]=Math.tanh(x*9);}ws.curve=cv;
   const pre=ac.createGain();pre.gain.value=.9;const g=ac.createGain();g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(Math.min(.5,vol*2.4),t+.012);g.gain.exponentialRampToValueAtTime(.0001,t+ln);const lp=ac.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2600;
   [82.4,123.5,164.8].forEach((f,i)=>{[0,.006].forEach(d=>{const o=ac.createOscillator();o.type='sawtooth';o.frequency.value=f*(1+d);o.connect(pre);o.start(t+i*.008);o.stop(t+ln+.05);});});pre.connect(ws).connect(lp).connect(g);out(g,.6);}
-const ALL_FREE=true;// por enquanto todas liberadas
+const ALL_FREE=false;// por enquanto todas liberadas
 function charOwned(id){return ALL_FREE||id==='professor'||(SAVE.skins||[]).includes(id);}
 // ---------- materiais e texturas ----------
 const CHT={};function chTex(id,srgb=true){if(CHT[id])return CHT[id];const el=document.getElementById(id);if(!el||!el.textContent.trim())return null;CHT[id]=b64tex(id,'image/jpeg',srgb);return CHT[id];}
@@ -2062,8 +2062,8 @@ function makeSkinPics(){try{if(!PROF.ready)return;}catch(e){return;}if(SKPIC||SK
   SKBUSY=false;try{if(!$('pchars').hidden)renderChars();if(!$('pshop').hidden)renderShop();}catch(e){}}}
 window.__charPic=id=>SKPIC&&SKPIC[id];window.__charRedo=()=>{SKPIC=null;makeSkinPics();};
 function renderChars(){makeSkinPics();const cur=charOwned(SAVE.profSkin||'professor')?(SAVE.profSkin||'professor'):'professor';
- $('pchars').innerHTML='<h2>Personagem</h2><p class="sub">Quem vai te caçar no colégio. Compre novos na Loja (600 moedas cada).</p><div class="chars">'+PCH.map(c=>{const op=charOwned(c[0]),on=cur===c[0];
-   const tag=on?'Usando':op?'Usar':'🔒 Loja · 600';
+ $('pchars').innerHTML='<h2>Personagem</h2><p class="sub">Quem vai te caçar no colégio. Compre novos na Loja com moedas.</p><div class="chars">'+PCH.map(c=>{const op=charOwned(c[0]),on=cur===c[0];
+   const tag=on?'Usando':op?'Usar':'🔒 Loja · '+c[3]+' moedas';
    return '<button class="chr'+(on?' on':'')+'" data-sk="'+c[0]+'" type="button"><div class="pic" style="background:#15171d '+(SKPIC&&SKPIC[c[0]]?'url(\''+SKPIC[c[0]]+'\') center/cover no-repeat':'')+';filter:'+(op?'none':'grayscale(.7) brightness(.45)')+'"></div><span class="tag"'+(op?'':' style="color:#e0403a"')+'>'+tag+'</span><b>'+c[1]+'</b><small>'+c[2]+'</small>'+(THEMES[c[0]]&&op?'<span class="thb'+(themeOn(c[0])?' on':'')+'" data-th="'+c[0]+'">'+THEMES[c[0]][1]+' Mapa '+THEMES[c[0]][2]+': '+(themeOn(c[0])?'ligado':'desligado')+'</span>':'')+'</button>';}).join('')+'</div>'+(started?'<p class="sub" style="color:#ff8a7a;margin-top:12px">Durante a partida não dá pra trocar. Volte ao menu inicial.</p>':'');
  const lockT=()=>{if(started){if(window.hint)hint('Só dá pra trocar de personagem antes de começar a partida.',2.5);return true;}return false;};
  $('pchars').querySelectorAll('[data-th]').forEach(b=>b.onclick=e=>{e.stopPropagation();if(lockT())return;const id=b.dataset.th;const on=!themeOn(id);SAVE.themes={};if(on){SAVE.themes[id]=true;SAVE.profSkin=id;try{if(PROF.ready)applyChar(PROF.v,id);}catch(e){}}persist();renderChars();});
