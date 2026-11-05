@@ -1,0 +1,45 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
+<title>Jogadores · Noite no Colégio</title>
+<style>
+:root{--bg:#0d0f14;--card:#161922;--line:#262a36;--tx:#efe8d8;--mut:#9a958a;--acc:#f2c230;--red:#d23b3b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:20px 16px 40px}
+.w{max-width:860px;margin:0 auto}h1{font-size:22px;margin:0 0 4px}.sub{color:var(--mut);font-size:13px;margin-bottom:20px}
+.g{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px}
+.k{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}.k .n{font-size:30px;font-weight:800;font-variant-numeric:tabular-nums}.k .l{color:var(--mut);font-size:12.5px}
+.k.hi{border-color:rgba(242,194,48,.5)}.k.hi .n{color:var(--acc)}
+.box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px}.box h2{font-size:14px;margin:0 0 12px;color:var(--mut);font-weight:600}
+.bars{display:flex;align-items:flex-end;gap:4px;height:140px}.bar{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:0}
+.bar i{display:block;width:100%;background:var(--acc);border-radius:4px 4px 0 0;min-height:2px}.bar b{font-size:11px;font-weight:600;margin-bottom:3px}.bar span{font-size:10px;color:var(--mut);margin-top:4px;white-space:nowrap}
+.row{display:flex;align-items:center;gap:10px;margin:6px 0}.row .nm{width:110px;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.row .tr{flex:1;height:10px;background:#20232d;border-radius:5px;overflow:hidden}.row .tr i{display:block;height:100%;background:var(--red)}.row .v{width:40px;text-align:right;font-variant-numeric:tabular-nums;font-size:13px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media(max-width:620px){.two{grid-template-columns:1fr}.bar span{font-size:8.5px}}
+button{background:none;border:1px solid var(--line);color:var(--tx);border-radius:8px;padding:7px 12px;cursor:pointer;font:inherit;font-size:13px}
+.err{color:var(--red)}
+</style></head><body><div class="w">
+<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px"><div><h1>Quem jogou Noite no Colégio</h1><div class="sub" id="up">Carregando…</div></div><button onclick="load()">Atualizar</button></div>
+<div class="g">
+<div class="k hi"><div class="n" id="jogadores">–</div><div class="l">pessoas diferentes jogaram</div></div>
+<div class="k"><div class="n" id="sem_conta">–</div><div class="l">jogaram sem conta</div></div>
+<div class="k"><div class="n" id="contas">–</div><div class="l">contas criadas</div></div>
+<div class="k"><div class="n" id="partidas">–</div><div class="l">partidas no total</div></div>
+<div class="k"><div class="n" id="hoje">–</div><div class="l">jogaram hoje</div></div>
+<div class="k"><div class="n" id="semana">–</div><div class="l">nos últimos 7 dias</div></div>
+<div class="k"><div class="n" id="celular">–</div><div class="l">no celular</div></div>
+<div class="k"><div class="n" id="pc">–</div><div class="l">no PC</div></div>
+</div>
+<div class="box"><h2>Pessoas por dia (últimos 14 dias)</h2><div class="bars" id="dias"></div></div>
+<div class="two"><div class="box"><h2>Partidas por dificuldade</h2><div id="dificuldade"></div></div><div class="box"><h2>Partidas por skin</h2><div id="skins"></div></div></div>
+<div class="sub">Conta cada aparelho/navegador como uma pessoa. Começou a contar em 05/11/2026.</div>
+</div><script>
+const URL_='https://tjakswjmcehszfbxvqqx.supabase.co/rest/v1/rpc/game_stats',KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRqYWtzd2ptY2Voc3pmYnh2cXF4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxMzEyMzAsImV4cCI6MjEwODcwNzIzMH0.QdDqy8fmkPANTsluL0FfYi_lQvuj2t2MQQ_KZ-l3I6k';
+const DN={facil:'Fácil',normal:'Normal',dificil:'Difícil',pesadelo:'Pesadelo'};
+function rows(el,o,names){const e=Object.entries(o||{}).sort((a,b)=>b[1]-a[1]);const m=Math.max(1,...e.map(x=>x[1]));
+ el.innerHTML=e.length?e.map(([k,v])=>`<div class="row"><div class="nm">${(names&&names[k])||k}</div><div class="tr"><i style="width:${v/m*100}%"></i></div><div class="v">${v}</div></div>`).join(''):'<div class="sub" style="margin:0">Nada ainda.</div>';}
+async function load(){const up=document.getElementById('up');up.textContent='Carregando…';up.className='sub';
+ try{const r=await fetch(URL_,{method:'POST',headers:{apikey:KEY,Authorization:'Bearer '+KEY,'Content-Type':'application/json'},body:'{}'});if(!r.ok)throw new Error(r.status);const d=await r.json();
+  for(const k of ['jogadores','sem_conta','contas','partidas','hoje','semana','celular','pc'])document.getElementById(k).textContent=d[k]??0;
+  const m=Math.max(1,...d.dias.map(x=>x.jogadores));document.getElementById('dias').innerHTML=d.dias.map(x=>`<div class="bar" title="${x.partidas} partidas"><b>${x.jogadores||''}</b><i style="height:${x.jogadores/m*85}%"></i><span>${x.dia}</span></div>`).join('');
+  rows(document.getElementById('dificuldade'),d.dificuldade,DN);rows(document.getElementById('skins'),d.skins);
+  up.textContent='Atualizado '+new Date(d.atualizado).toLocaleString('pt-BR');}
+ catch(e){up.textContent='Não consegui carregar ('+e.message+'). Se o servidor dormiu, abra o painel do Supabase pra acordar.';up.className='sub err';}}
+load();
+</script></body></html>
